@@ -4,6 +4,7 @@ from app.automation.service import handle_event
 from app.domain.application.models import Application
 from app.domain.audit.models import AuditLog
 from app.domain.workflow.models import WorkflowTransition
+from app.services.activity_service import create_activity
 
 
 class ApplicationNotFoundError(Exception):
@@ -45,6 +46,7 @@ def move_application_stage(db: Session, application_id: str, new_stage: str):
         raise InvalidStageTransitionError(current_stage, new_stage, allowed_to_stages)
 
     app.stage = new_stage
+ 
     db.add(app)
 
     log = AuditLog(
@@ -65,6 +67,17 @@ def move_application_stage(db: Session, application_id: str, new_stage: str):
         },
     )
     db.add(log)
+
+    create_activity(
+        db,
+        entity_type="application",
+        entity_id=str(app.id),
+        activity_type="stage_changed",
+        payload={
+            "from_stage": current_stage,
+            "to_stage": new_stage,
+        },
+    )
 
     db.commit()
     db.refresh(app)
