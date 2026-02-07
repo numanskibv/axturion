@@ -11,6 +11,9 @@ It is used by:
 
 This service must ensure workflow integrity.
 """
+
+from uuid import UUID
+
 from sqlalchemy.orm import Session
 
 from app.domain.workflow.models import (
@@ -29,25 +32,26 @@ def get_workflow_definition(db: Session, workflow_id: str):
     This is used by admin tooling and workflow editors.
     """
 
-    workflow = (
-        db.query(Workflow)
-        .filter(Workflow.id == workflow_id)
-        .first()
-    )
+    try:
+        workflow_uuid = UUID(str(workflow_id))
+    except ValueError as exc:
+        raise ValueError("Invalid workflow_id") from exc
+
+    workflow = db.query(Workflow).filter(Workflow.id == workflow_uuid).first()
 
     if not workflow:
-        return None
+        raise ValueError("Workflow not found")
 
     stages = (
         db.query(WorkflowStage)
-        .filter(WorkflowStage.workflow_id == workflow_id)
+        .filter(WorkflowStage.workflow_id == workflow_uuid)
         .order_by(WorkflowStage.order)
         .all()
     )
 
     transitions = (
         db.query(WorkflowTransition)
-        .filter(WorkflowTransition.workflow_id == workflow_id)
+        .filter(WorkflowTransition.workflow_id == workflow_uuid)
         .all()
     )
 
