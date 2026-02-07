@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 from app.core.db import get_db
 from app.services.workflow_editor_service import get_workflow_definition
 
-router = APIRouter(prefix="/workflows", tags=["workflows"])
+router = APIRouter()
 
 
 @router.get("/{workflow_id}")

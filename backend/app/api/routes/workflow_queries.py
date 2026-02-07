@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 from app.core.db import get_db
 from app.services.workflow_query_service import get_allowed_transitions
 
-router = APIRouter(prefix="/workflow-queries", tags=["workflow"])
+router = APIRouter()
 
 
 @router.get("/applications/{application_id}/allowed-transitions")

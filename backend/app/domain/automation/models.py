@@ -1,8 +1,9 @@
 import uuid
-from sqlalchemy import Column, String, DateTime, Text
+from sqlalchemy import JSON, Column, DateTime, String, Text
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.sql import func
 from app.core.db import Base
+
 
 class AutomationRule(Base):
     __tablename__ = "automation_rule"
@@ -15,6 +16,7 @@ class AutomationRule(Base):
     action_type = Column(String, nullable=False)
     action_payload = Column(Text, nullable=True)
 
+
 class Activity(Base):
     __tablename__ = "activity"
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
@@ -22,4 +24,5 @@ class Activity(Base):
     entity_id = Column(String, nullable=False)
     type = Column(String, nullable=False)
     message = Column(Text, nullable=True)
+    payload = Column(JSON, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
