@@ -11,22 +11,32 @@ It is used by:
 
 This service must ensure workflow integrity.
 """
-
 from sqlalchemy.orm import Session
-from typing import List
 
-from app.domain.workflow.models import Workflow, WorkflowStage, WorkflowTransition
+from app.domain.workflow.models import (
+    Workflow,
+    WorkflowStage,
+    WorkflowTransition,
+)
+
 
 def get_workflow_definition(db: Session, workflow_id: str):
     """
-    Return the full workflow definition:
-    - stages (ordered)
-    - transitions
+    Return the full workflow definition including:
+    - ordered stages
+    - allowed transitions
+
+    This is used by admin tooling and workflow editors.
     """
 
-    workflow = db.query(Workflow).filter(Workflow.id == workflow_id).first()
+    workflow = (
+        db.query(Workflow)
+        .filter(Workflow.id == workflow_id)
+        .first()
+    )
+
     if not workflow:
-        raise ValueError(f"Workflow {workflow_id} not found")
+        return None
 
     stages = (
         db.query(WorkflowStage)
@@ -54,7 +64,6 @@ def get_workflow_definition(db: Session, workflow_id: str):
         ],
         "transitions": [
             {
-                "id": str(transition.id),
                 "from_stage": transition.from_stage,
                 "to_stage": transition.to_stage,
             }
