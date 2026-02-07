@@ -1,10 +1,12 @@
-from sqlalchemy.orm import Session
 import json
 
-from app.domain.workflow.models import Workflow, WorkflowStage, WorkflowTransition
-from app.domain.automation.models import AutomationRule
+from sqlalchemy.orm import Session
 
-def seed_workflow(db: Session):
+from app.domain.automation.models import AutomationRule
+from app.domain.workflow.models import Workflow, WorkflowStage, WorkflowTransition
+
+
+def seed_workflow(db: Session) -> None:
     existing = db.query(Workflow).first()
     if existing:
         return
@@ -14,13 +16,14 @@ def seed_workflow(db: Session):
     db.flush()
 
     stages = ["applied", "screening", "interview", "offer", "hired"]
-
     for i, stage in enumerate(stages):
-        db.add(WorkflowStage(
-            workflow_id=wf.id,
-            name=stage,
-            order=i
-        ))
+        db.add(
+            WorkflowStage(
+                workflow_id=wf.id,
+                name=stage,
+                order=i,
+            )
+        )
 
     transitions = [
         ("applied", "screening"),
@@ -28,20 +31,19 @@ def seed_workflow(db: Session):
         ("interview", "offer"),
         ("offer", "hired"),
     ]
-
-    for f, t in transitions:
-        db.add(WorkflowTransition(
-            workflow_id=wf.id,
-            from_stage=f,
-            to_stage=t
-        ))
+    for from_stage, to_stage in transitions:
+        db.add(
+            WorkflowTransition(
+                workflow_id=wf.id,
+                from_stage=from_stage,
+                to_stage=to_stage,
+            )
+        )
 
     db.commit()
-    
-    from app.domain.models import AutomationRule
-import json
 
-def seed_automation(db: Session):
+
+def seed_automation(db: Session) -> None:
     existing = db.query(AutomationRule).first()
     if existing:
         return
@@ -53,10 +55,12 @@ def seed_automation(db: Session):
         condition_key="to_stage",
         condition_value="interview",
         action_type="create_activity",
-        action_payload=json.dumps({
-            "type": "task",
-            "message": "Schedule interview with candidate"
-        })
+        action_payload=json.dumps(
+            {
+                "type": "task",
+                "message": "Schedule interview with candidate",
+            }
+        ),
     )
     db.add(rule)
     db.commit()

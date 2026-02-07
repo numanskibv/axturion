@@ -21,3 +21,13 @@ class WorkflowDefinitionResponse(BaseModel): # API response schema for full work
 
     class Config:
         from_attributes = True
+
+class CreateWorkflowStageRequest(BaseModel): # API request schema for creating a new workflow stage.
+    name: str
+    order: int | None = None
+
+
+class WorkflowStageCreatedResponse(BaseModel): # API response schema for a newly created workflow stage.
+    id: UUID
+    name: str
+    order: int

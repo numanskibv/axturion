@@ -15,6 +15,8 @@ This service must ensure workflow integrity.
 from uuid import UUID
 
 from sqlalchemy.orm import Session
+from sqlalchemy import func
+
 
 from app.domain.workflow.models import (
     Workflow,
@@ -74,3 +76,61 @@ def get_workflow_definition(db: Session, workflow_id: str):
             for transition in transitions
         ],
     }
+
+
+class WorkflowNotFoundError(Exception):
+    pass
+
+
+class DuplicateStageNameError(Exception):
+    pass
+
+
+def add_workflow_stage(
+    db: Session,
+    workflow_id,
+    name: str,
+    order: int | None = None,
+):
+    """
+    Add a stage to a workflow.
+
+    - If order is None, append to the end
+    - Stage names must be unique per workflow
+    """
+
+    workflow = db.query(Workflow).filter(Workflow.id == workflow_id).first()
+    if not workflow:
+        raise WorkflowNotFoundError()
+
+    # Enforce unique stage name per workflow
+    existing = (
+        db.query(WorkflowStage)
+        .filter(
+            WorkflowStage.workflow_id == workflow_id,
+            WorkflowStage.name == name,
+        )
+        .first()
+    )
+    if existing:
+        raise DuplicateStageNameError()
+
+    if order is None:
+        max_order = (
+            db.query(func.max(WorkflowStage.order))
+            .filter(WorkflowStage.workflow_id == workflow_id)
+            .scalar()
+        )
+        order = (max_order or 0) + 1
+
+    stage = WorkflowStage(
+        workflow_id=workflow_id,
+        name=name,
+        order=order,
+    )
+
+    db.add(stage)
+    db.commit()
+    db.refresh(stage)
+
+    return stage
