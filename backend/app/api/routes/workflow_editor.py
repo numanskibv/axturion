@@ -23,7 +23,7 @@ from app.api.schemas.workflow_editor import (
 )
 
 router = APIRouter(
-    prefix="/workflows", tags=["workflow-editor"]
+    tags=["workflow-editor"]
 )  # API router for workflow editor-related endpoints.
 
 

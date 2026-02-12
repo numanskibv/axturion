@@ -2,15 +2,27 @@ from app.workflow.service import move_application_stage
 from app.domain.application.models import Application
 from app.domain.workflow.models import WorkflowTransition
 from app.domain.automation.models import Activity
+from app.domain.workflow.models import Workflow, WorkflowTransition
+
 
 ##  This test verifies that when an application stage is changed, an Activity record is created to log this event.
 
 def test_stage_change_creates_activity(db):
+    # Arrange: create workflow
+    workflow = Workflow(name="Test Workflow")
+    db.add(workflow)
+    db.commit()
+    db.refresh(workflow)
+
     # Arrange: application + workflow transition
-    application = Application(stage="applied")
+    application = Application(
+        workflow_id=workflow.id,
+        stage="applied",
+    )
     db.add(application)
 
     transition = WorkflowTransition(
+        workflow_id=workflow.id,
         from_stage="applied",
         to_stage="screening",
     )

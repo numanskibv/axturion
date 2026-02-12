@@ -26,12 +26,15 @@ def get_allowed_transitions(
 
     allowed_to_rows = (
         db.query(WorkflowTransition.to_stage)
-        .filter(WorkflowTransition.from_stage == current_stage)
+        .filter(
+            WorkflowTransition.workflow_id == app.workflow_id,
+            WorkflowTransition.from_stage == current_stage,
+        )
         .all()
     )
     allowed_to_stages = [row[0] for row in allowed_to_rows]
 
     return {
-    "from_stage": current_stage,
-    "allowed_to_stages": allowed_to_stages,
-}
+        "from_stage": current_stage,
+        "allowed_to_stages": allowed_to_stages,
+    }

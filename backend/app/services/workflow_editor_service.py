@@ -255,7 +255,12 @@ def remove_workflow_stage(
     from app.domain.application.models import Application
 
     app_in_use = (
-        db.query(Application.id).filter(Application.stage == stage_name).first()
+        db.query(Application.id)
+        .filter(
+            Application.workflow_id == workflow_uuid,
+            Application.stage == stage_name,
+        )
+        .first()
     )
     if app_in_use:
         raise StageInUseError()

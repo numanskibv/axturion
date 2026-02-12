@@ -44,7 +44,8 @@ def test_remove_workflow_stage_fails_if_used_by_application(db):
         ]
     )
 
-    db.add(Application(stage="applied"))
+    application = Application(workflow_id=workflow.id, stage="applied")
+    db.add(application)
     db.commit()
 
     with pytest.raises(StageInUseError):

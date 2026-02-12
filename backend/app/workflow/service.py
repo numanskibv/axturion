@@ -28,7 +28,10 @@ def move_application_stage(db: Session, application_id: str, new_stage: str):
 
     allowed_to_rows = (
         db.query(WorkflowTransition.to_stage)
-        .filter(WorkflowTransition.from_stage == current_stage)
+        .filter(
+            WorkflowTransition.workflow_id == app.workflow_id,
+            WorkflowTransition.from_stage == current_stage,
+        )
         .all()
     )
     allowed_to_stages = [row[0] for row in allowed_to_rows]
@@ -36,6 +39,7 @@ def move_application_stage(db: Session, application_id: str, new_stage: str):
     transition = (
         db.query(WorkflowTransition)
         .filter(
+            WorkflowTransition.workflow_id == app.workflow_id,
             WorkflowTransition.from_stage == current_stage,
             WorkflowTransition.to_stage == new_stage,
         )
@@ -46,7 +50,7 @@ def move_application_stage(db: Session, application_id: str, new_stage: str):
         raise InvalidStageTransitionError(current_stage, new_stage, allowed_to_stages)
 
     app.stage = new_stage
- 
+
     db.add(app)
 
     log = AuditLog(
