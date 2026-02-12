@@ -8,7 +8,7 @@ def test_add_workflow_stage_appends_when_no_order(db):
     db.commit()
     db.refresh(workflow)
 
-    stage1 = add_workflow_stage(db, workflow.id, "applied")P
+    stage1 = add_workflow_stage(db, workflow.id, "applied")
     stage2 = add_workflow_stage(db, workflow.id, "screening")
 
     assert stage1.order == 1
