@@ -266,6 +266,22 @@ def remove_workflow_stage(
         raise StageInUseError()
 
     db.delete(stage)
+
+    remaining_stages = (
+        db.query(WorkflowStage)
+        .filter(WorkflowStage.workflow_id == workflow_uuid)
+        .order_by(
+            WorkflowStage.order.is_(None),
+            WorkflowStage.order,
+            WorkflowStage.name,
+        )
+        .all()
+    )
+
+    # Keep stage ordering contiguous (1..N) after deletion.
+    for index, remaining in enumerate(remaining_stages, start=1):
+        remaining.order = index
+
     db.commit()
 
     return None

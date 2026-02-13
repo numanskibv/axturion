@@ -16,6 +16,7 @@ from app.api.routes import (
     workflows,
     workflow_queries,
     workflow_editor,
+    reporting,
 )
 
 # Ensure all models are imported so SQLAlchemy sees them
@@ -25,6 +26,8 @@ from app.domain.application.models import Application
 from app.domain.workflow.models import Workflow, WorkflowStage, WorkflowTransition
 from app.domain.audit.models import AuditLog
 from app.domain.automation.models import AutomationRule, Activity
+
+
 
 
 @asynccontextmanager
@@ -42,7 +45,7 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(title="ATS Platform", lifespan=lifespan)
-
+app.include_router(reporting.router)
 app.include_router(applications.router, prefix="/applications", tags=["applications"])
 app.include_router(activity.router, prefix="/activity", tags=["activity"])
 app.include_router(workflows.router, prefix="/workflows", tags=["workflows"])

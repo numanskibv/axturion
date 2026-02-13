@@ -73,3 +73,32 @@ def test_remove_workflow_stage_succeeds_when_unused(db):
     )
 
     assert [s.name for s in remaining] == ["screening"]
+    assert [s.order for s in remaining] == [1]
+
+
+def test_remove_workflow_stage_reorders_remaining_stages(db):
+    workflow = Workflow(name="Test Workflow")
+    db.add(workflow)
+    db.commit()
+    db.refresh(workflow)
+
+    db.add_all(
+        [
+            WorkflowStage(workflow_id=workflow.id, name="applied", order=1),
+            WorkflowStage(workflow_id=workflow.id, name="screening", order=2),
+            WorkflowStage(workflow_id=workflow.id, name="onsite", order=3),
+        ]
+    )
+    db.commit()
+
+    remove_workflow_stage(db, workflow.id, "screening")
+
+    remaining = (
+        db.query(WorkflowStage)
+        .filter(WorkflowStage.workflow_id == workflow.id)
+        .order_by(WorkflowStage.order)
+        .all()
+    )
+
+    assert [s.name for s in remaining] == ["applied", "onsite"]
+    assert [s.order for s in remaining] == [1, 2]
