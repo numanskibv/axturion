@@ -28,8 +28,6 @@ from app.domain.audit.models import AuditLog
 from app.domain.automation.models import AutomationRule, Activity
 
 
-
-
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Compose can start the API container before Postgres is ready.
@@ -44,16 +42,32 @@ async def lifespan(app: FastAPI):
     yield
 
 
-app = FastAPI(title="ATS Platform", lifespan=lifespan)
+app = FastAPI(
+    title="MATS API",
+    version="0.4.0",
+    description="""
+MATS (Modular Application Tracking System) is a workflow-driven recruitment infrastructure platform.
+
+This API provides:
+- Workflow configuration
+- Application lifecycle control
+- Audit and activity tracking
+- Governance-aligned reporting
+
+All operations are strictly workflow-scoped.
+Designed for on-premise, modular, and extensible deployments.
+""",
+    lifespan=lifespan,
+)
 app.include_router(reporting.router)
-app.include_router(applications.router, prefix="/applications", tags=["applications"])
-app.include_router(activity.router, prefix="/activity", tags=["activity"])
-app.include_router(workflows.router, prefix="/workflows", tags=["workflows"])
+app.include_router(applications.router, prefix="/applications")
+app.include_router(activity.router, prefix="/activity")
+app.include_router(workflows.router, prefix="/workflows")
 app.include_router(
-    workflow_queries.router, prefix="/workflow-queries", tags=["workflow-queries"]
+    workflow_queries.router, prefix="/workflow-queries"
 )
 app.include_router(
-    workflow_editor.router, prefix="/workflow-editor", tags=["workflow-editor"]
+    workflow_editor.router, prefix="/workflow-editor"
 )
 
 
