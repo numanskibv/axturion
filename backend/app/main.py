@@ -63,12 +63,8 @@ app.include_router(reporting.router)
 app.include_router(applications.router, prefix="/applications")
 app.include_router(activity.router, prefix="/activity")
 app.include_router(workflows.router, prefix="/workflows")
-app.include_router(
-    workflow_queries.router, prefix="/workflow-queries"
-)
-app.include_router(
-    workflow_editor.router, prefix="/workflow-editor"
-)
+app.include_router(workflow_queries.router, prefix="/workflow-queries")
+app.include_router(workflow_editor.router, prefix="/workflow-editor")
 
 
 @app.get("/health")
