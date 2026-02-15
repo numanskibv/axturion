@@ -20,7 +20,7 @@ def test_stage_duration_summary_is_workflow_scoped_and_calculates_average(db):
     )
     db.commit()
 
-    now = datetime.now(timezone.utc)
+    now = datetime(2026, 1, 1, 12, 0, 0, tzinfo=timezone.utc)
 
     # Applications in workflow A
     app1 = Application(
@@ -57,13 +57,13 @@ def test_stage_duration_summary_is_workflow_scoped_and_calculates_average(db):
     db.commit()
 
     # Act
-    result = get_stage_duration_summary(db, workflow_a.id)
+    result = get_stage_duration_summary(db, workflow_a.id, now=now)
 
     stages = {s["stage"]: s for s in result["stages"]}
 
     # Average of 4 and 2 days = 3 days
     assert stages["applied"]["count"] == 2
-    assert 2.9 <= stages["applied"]["average_days"] <= 3.1
+    assert stages["applied"]["average_days"] == 3.0
 
     # Ensure no leakage from workflow B
     assert stages["applied"]["count"] != 3

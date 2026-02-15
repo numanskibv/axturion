@@ -55,19 +55,39 @@ def get_stage_summary(db: Session, workflow_id):
     }
 
 
-def get_stage_duration_summary(db: Session, workflow_id):
+def get_stage_duration_summary(db: Session, workflow_id, now: datetime | None = None):
     workflow = db.query(Workflow).filter(Workflow.id == workflow_id).first()
     if not workflow:
         raise WorkflowNotFoundError()
 
-    # Calculate duration in days for each application
-    now = datetime.now(timezone.utc)
+    if now is None:
+        now = datetime.utcnow()
+
+    if now.tzinfo is None:
+        now = now.replace(tzinfo=timezone.utc)
+    else:
+        now = now.astimezone(timezone.utc)
+
+    stages_for_workflow = (
+        db.query(WorkflowStage)
+        .filter(WorkflowStage.workflow_id == workflow_id)
+        .order_by(WorkflowStage.order)
+        .all()
+    )
+
+    workflow_stage_names = {stage.name for stage in stages_for_workflow}
 
     applications = (
         db.query(Application).filter(Application.workflow_id == workflow_id).all()
     )
 
     stage_data: dict[str, dict[str, float | int]] = {}
+
+    for stage_name in workflow_stage_names:
+        stage_data[stage_name] = {
+            "total_duration": 0.0,
+            "count": 0,
+        }
 
     for app in applications:
         if not app.stage_entered_at:
@@ -76,12 +96,14 @@ def get_stage_duration_summary(db: Session, workflow_id):
         entered_at = app.stage_entered_at
         if entered_at.tzinfo is None:
             entered_at = entered_at.replace(tzinfo=timezone.utc)
+        else:
+            entered_at = entered_at.astimezone(timezone.utc)
 
         duration = (now - entered_at).total_seconds() / 86400
 
         if app.stage not in stage_data:
             stage_data[app.stage] = {
-                "total_duration": 0,
+                "total_duration": 0.0,
                 "count": 0,
             }
 
@@ -90,12 +112,40 @@ def get_stage_duration_summary(db: Session, workflow_id):
 
     stages = []
 
-    for stage_name, data in stage_data.items():
-        avg = data["total_duration"] / data["count"]
+    for stage in stages_for_workflow:
+        data = stage_data[stage.name]
+        if data["count"]:
+            avg = data["total_duration"] / data["count"]
+            average_days = round(avg, 2)
+        else:
+            average_days = 0.0
+
+        stages.append(
+            {
+                "stage": stage.name,
+                "average_days": average_days,
+                "count": data["count"],
+            }
+        )
+
+    extra_stage_names = sorted(
+        stage_name
+        for stage_name in stage_data.keys()
+        if stage_name not in workflow_stage_names
+    )
+
+    for stage_name in extra_stage_names:
+        data = stage_data[stage_name]
+        if data["count"]:
+            avg = data["total_duration"] / data["count"]
+            average_days = round(avg, 2)
+        else:
+            average_days = 0.0
+
         stages.append(
             {
                 "stage": stage_name,
-                "average_days": round(avg, 2),
+                "average_days": average_days,
                 "count": data["count"],
             }
         )

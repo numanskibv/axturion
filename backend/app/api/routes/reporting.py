@@ -1,7 +1,11 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from app.core.db import get_db
-from app.services.reporting_service import get_stage_duration_summary, get_stage_summary
+from app.services.reporting_service import (
+    WorkflowNotFoundError,
+    get_stage_duration_summary,
+    get_stage_summary,
+)
 from app.api.schemas.reporting import (
     WorkflowStageSummaryResponse,
     WorkflowStageDurationResponse,
@@ -23,7 +27,10 @@ router = APIRouter(prefix="/reporting", tags=["reporting"])
     response_model=WorkflowStageSummaryResponse,
 )
 def stage_summary(workflow_id: str, db: Session = Depends(get_db)):
-    return get_stage_summary(db, workflow_id)
+    try:
+        return get_stage_summary(db, workflow_id)
+    except WorkflowNotFoundError:
+        raise HTTPException(status_code=404, detail="Workflow not found")
 
 
 @router.get(
@@ -39,4 +46,7 @@ def stage_summary(workflow_id: str, db: Session = Depends(get_db)):
     response_model=WorkflowStageDurationResponse,
 )
 def stage_duration(workflow_id: str, db: Session = Depends(get_db)):
-    return get_stage_duration_summary(db, workflow_id)
+    try:
+        return get_stage_duration_summary(db, workflow_id)
+    except WorkflowNotFoundError:
+        raise HTTPException(status_code=404, detail="Workflow not found")
