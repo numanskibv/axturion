@@ -6,6 +6,20 @@ from logging.config import fileConfig
 from alembic import context
 from sqlalchemy import engine_from_config, pool
 
+from app.core.db import Base
+
+# Force-load all models so metadata is populated
+from app.domain.application.models import Application
+from app.domain.workflow.models import (
+    Workflow,
+    WorkflowStage,
+    WorkflowTransition,
+)
+from app.domain.automation.models import AutomationRule, Activity
+from app.domain.audit.models import AuditLog
+from app.domain.job.models import Job
+from app.domain.candidate.models import Candidate
+
 # Alembic Config object (alembic.ini)
 config = context.config
 
@@ -13,7 +27,7 @@ if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
 # TODO: koppel hier later je SQLAlchemy MetaData (voor autogenerate)
-target_metadata = None
+target_metadata = Base.metadata
 
 
 def get_database_url() -> str:

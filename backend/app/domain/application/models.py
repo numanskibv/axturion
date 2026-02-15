@@ -3,6 +3,7 @@ from sqlalchemy import Column, String, ForeignKey, DateTime
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.sql import func
 from app.core.db import Base
+import uuid
 
 
 class Application(Base):
@@ -11,16 +12,23 @@ class Application(Base):
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
 
     workflow_id = Column(UUID(as_uuid=True), ForeignKey("workflow.id"), nullable=False)
-    candidate_id = Column(UUID(as_uuid=True), ForeignKey("candidate.id"))
-    job_id = Column(UUID(as_uuid=True), ForeignKey("job.id"))
 
-    stage = Column(String, default="applied")
+    stage = Column(String, nullable=False)
+
+    status = Column(String, nullable=False, default="active")
+
     stage_entered_at = Column(
         DateTime(timezone=True),
-        server_default=func.now(),
         nullable=False,
+        server_default=func.now(),
     )
 
-    status = Column(String, default="active")
+    closed_at = Column(
+        DateTime(timezone=True),
+        nullable=True,
+    )
 
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    created_at = Column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+    )

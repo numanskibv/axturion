@@ -32,7 +32,6 @@ from app.domain.automation.models import AutomationRule, Activity
 async def lifespan(app: FastAPI):
     # Compose can start the API container before Postgres is ready.
     wait_for_db()
-    Base.metadata.create_all(bind=engine)
     ensure_activity_payload_column()
 
     with SessionLocal() as db:

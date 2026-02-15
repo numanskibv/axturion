@@ -6,6 +6,7 @@ from app.domain.application.models import Application
 from app.domain.audit.models import AuditLog
 from app.domain.workflow.models import WorkflowTransition
 from app.services.activity_service import create_activity
+from app.services.application_service import ApplicationAlreadyClosedError
 
 
 class ApplicationNotFoundError(Exception):
@@ -24,6 +25,9 @@ def move_application_stage(db: Session, application_id, new_stage: str):
     app = db.query(Application).filter(Application.id == application_id).first()
     if not app:
         raise ApplicationNotFoundError("Application not found")
+
+    if app.status == "closed":
+        raise ApplicationAlreadyClosedError()
 
     current_stage = app.stage
     workflow_id = app.workflow_id
