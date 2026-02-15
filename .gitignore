@@ -16,5 +16,10 @@ venv/
 # OS
 .DS_Store
 
-# Local guidelines
-MATS.md
+.env
+.env.*
+*.env
+
+deploy/.env.staging
+deploy/.env.production
+

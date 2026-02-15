@@ -49,7 +49,26 @@ The transition to 1.0.0 will mark:
 
 Until then, 0.x releases represent controlled architectural evolution — not instability.
 
-## [v0.4.0] – 2026-02
+## [0.5.0] - 2026-02-15
+
+### Added
+- Alembic migrations integrated
+- Docker entrypoint with automated migration & seed
+- Health endpoints (/live, /ready, /health)
+- Structured startup flow
+
+### Improved
+- Stage duration reporting stabilization
+- Deterministic reporting tests
+- Logging configuration
+- Infrastructure maturity
+
+### Fixed
+- Closed applications cannot change stage
+- Flaky datetime-based tests
+- Duplicate Alembic execution
+
+## [v0.4.0] – 2026-02-14
 
 ### Focus
 Workflow integrity stabilization and governance-aligned reporting foundation.
@@ -95,7 +114,7 @@ This release marks the transition from technical prototype to stable recruitment
 
 ---
 
-## [v0.3.0] – 2026-02
+## [v0.3.0] – 2026-02-12
 
 ### Focus
 Workflow engine hardening and architectural integrity.

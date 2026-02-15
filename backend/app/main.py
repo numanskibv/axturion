@@ -1,11 +1,15 @@
+import os
+import subprocess
+from datetime import datetime, timezone
 from contextlib import asynccontextmanager
-
-from fastapi import FastAPI
+from fastapi import FastAPI, Depends, APIRouter
+from sqlalchemy.orm import Session
 from app.core.db import (
     engine,
     Base,
     SessionLocal,
     ensure_activity_payload_column,
+    get_db,
     wait_for_db,
 )
 from app.core.seed import seed_workflow
@@ -19,6 +23,14 @@ from app.api.routes import (
     reporting,
 )
 
+from app.services.health_service import (
+    check_database,
+    check_migrations,
+    get_app_version,
+    get_build_hash,
+    get_uptime_seconds,
+)
+
 # Ensure all models are imported so SQLAlchemy sees them
 from app.domain.job.models import Job
 from app.domain.candidate.models import Candidate
@@ -26,6 +38,9 @@ from app.domain.application.models import Application
 from app.domain.workflow.models import Workflow, WorkflowStage, WorkflowTransition
 from app.domain.audit.models import AuditLog
 from app.domain.automation.models import AutomationRule, Activity
+from app.core.logging_config import configure_logging
+
+configure_logging()
 
 
 @asynccontextmanager
@@ -43,7 +58,7 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(
     title="MATS API",
-    version="0.4.0",
+    version="0.5.0",
     description="""
 MATS (Modular Application Tracking System) is a workflow-driven recruitment infrastructure platform.
 
@@ -66,16 +81,56 @@ app.include_router(workflow_queries.router, prefix="/workflow-queries")
 app.include_router(workflow_editor.router, prefix="/workflow-editor")
 
 
-@app.get("/health")
-def health():
-    return {"status": "ok"}
+router = APIRouter()
 
 
-def run():
-    import uvicorn
+@router.get(
+    "/live",
+    summary="Liveness probe",
+    description="Returns if the application process is alive.",
+)
+def liveness():
+    return {"status": "alive"}
 
-    uvicorn.run("app.main:app", host="0.0.0.0", port=8000)
+
+@router.get(
+    "/ready",
+    summary="Readiness probe",
+    description="Checks if the system is ready to serve traffic.",
+)
+def readiness(db: Session = Depends(get_db)):
+    db_ok = check_database(db)
+    migrations_ok = check_migrations(db)
+
+    return {
+        "status": "ready" if db_ok and migrations_ok else "not_ready",
+        "database": db_ok,
+        "migrations": migrations_ok,
+    }
 
 
-if __name__ == "__main__":
-    run()
+@router.get(
+    "/health",
+    summary="System health overview",
+    description="Returns extended system health including version, uptime and build metadata.",
+)
+def health(db: Session = Depends(get_db)):
+    db_ok = check_database(db)
+    migrations_ok = check_migrations(db)
+
+    overall = "ok" if db_ok and migrations_ok else "degraded"
+
+    return {
+        "status": overall,
+        "database": "ok" if db_ok else "down",
+        "migrations": "up_to_date" if migrations_ok else "out_of_date",
+        "version": get_app_version(),
+        "build_hash": get_build_hash(),
+        "uptime_seconds": get_uptime_seconds(),
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+    }
+
+
+app.include_router(router)
+
+
