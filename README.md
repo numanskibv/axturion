@@ -1,167 +1,80 @@
 # MATS
 Modular Application Tracking System
 
-MATS is a workflow-driven recruitment infrastructure platform designed for governance-oriented organizations.
+MATS is a workflow-driven recruitment infrastructure platform.
 
-It is built for environments where:
+It is designed for governance-oriented organizations that require:
 
-- On-premise deployment is required
-- Vendor lock-in must be avoided
-- Workflow control and auditability are essential
-- Long-term architectural stability is prioritized over rapid feature expansion
+- On-premise deployment
+- Sovereign data control
+- No vendor lock-in
+- Strict workflow integrity
+- Deterministic reporting
+- Long-term architectural stability
 
 MATS is not a feature-first ATS.
 It is an infrastructure-first recruitment foundation.
 
 ---
 
-## Core Principles
+## Core Characteristics
 
-- Workflow-driven process control
-- Strict workflow ↔ application isolation
-- Governance-safe mutations
-- Deterministic reporting
-- API-first design
-- Modular extensibility
+- Workflow-scoped application isolation
+- Explicit transition validation
+- Governance-safe workflow mutations
+- Deterministic reporting engine
+- Event-driven automation
+- Service-layer enforced business rules
+- Open-core architecture
 
 ---
 
-## Architecture Overview
+## Architecture
 
-MATS follows a layered architecture:
+MATS follows a layered backend-first architecture:
 
-- Domain models (pure SQLAlchemy)
-- Service layer (business logic & integrity rules)
-- API layer (FastAPI, request/response mapping)
-- Reporting layer (governance insights)
-- Automation layer (event-driven rules)
+- Domain models (SQLAlchemy)
+- Service layer (business logic and integrity)
+- API layer (FastAPI + Pydantic)
+- Reporting layer
+- Automation engine
 
-For full architectural details, see:
-→ `ARCHITECTURE.md`
+For full architectural details:
+→ ARCHITECTURE.md
 
 ---
 
 ## Running Locally
 
-## Start the stack ##
-bash:
+Start stack:
+
 docker compose up -d --build
 
-## Run test ##
-bash:
+Run tests:
+
 docker exec -it deploy-backend-1 sh -lc 'PYTHONPATH=/app pytest -q /tests'
 
-## Swagger UI ##
+Swagger UI:
+
 http://localhost:8000/docs
 
-## Documentation ##
-	•	Architecture → ARCHITECTURE.md
-	•	Engineering Guardrails → ENGINEERING_GUIDELINES.md
-	•	Roadmap → ROADMAP.md
-	•	Changelog → CHANGELOG.md
-	•	Contribution Guidelines → CONTRIBUTING.md
+---
 
-⸻
+## Documentation
 
-## License ##
-
-Open Core model.
-Enterprise governance layer may be provided separately.
-
-Code:
-
- ---
-
-# ✅ 2️⃣ ARCHITECTURE.md (Uitgebreid, volwassen)
-
-```markdown
-# MATS Architecture
-
-MATS is built as a workflow-driven recruitment infrastructure platform.
-
-The architecture prioritizes structural correctness, governance alignment, and long-term maintainability.
+- Architecture → ARCHITECTURE.md
+- Engineering Guardrails → ENGINEERING_GUIDELINES.md
+- Governance Model → GOVERNANCE.md
+- Roadmap → ROADMAP.md
+- Changelog → CHANGELOG.md
+- Contribution Guidelines → CONTRIBUTING.md
+- Security Policy → SECURITY.md
+- Enterprise Layer → ENTERPRISE.md
 
 ---
 
-## Architectural Goals
+## License
 
-- Strict workflow isolation
-- No cross-workflow leakage
-- Deterministic reporting
-- Service-layer integrity enforcement
-- Clear separation of concerns
-- On-premise compatibility
+MATS Core is licensed under Apache 2.0.
 
----
-
-## Layered Design
-
-### 1. Domain Layer
-
-- Pure SQLAlchemy models
-- No FastAPI imports
-- No framework coupling
-- Explicit workflow_id binding
-
-### 2. Service Layer
-
-All business logic lives here.
-
-Responsibilities:
-- Workflow integrity validation
-- Transition enforcement
-- Stage mutation safety
-- Reporting aggregation
-- Automation triggers
-
-No HTTP logic.
-No request parsing.
-
-### 3. API Layer
-
-- FastAPI routers
-- Schema validation via Pydantic
-- Error mapping only
-- No business rules
-
-### 4. Reporting Layer
-
-Workflow-scoped reporting:
-- Stage distribution
-- Stage duration
-- Deterministic calculations
-- Zero-count inclusion
-
-### 5. Automation Layer
-
-Event-driven:
-- Stage change triggers
-- Activity logging
-- Rule-based execution
-
----
-
-## Workflow Integrity Model
-
-Applications are explicitly bound to a workflow:
-
-Application.workflow_id
-
-Transitions are validated per workflow context.
-
-This enables:
-
-- Multi-workflow deployments
-- Future multi-organization support
-- Governance-safe isolation
-
----
-
-## Design Philosophy
-
-MATS prioritizes:
-
-- Structural clarity over abstraction cleverness
-- Explicit logic over magic
-- Long-term maintainability over speed
-- Governance alignment over feature velocity
+Enterprise governance capabilities may be provided separately.

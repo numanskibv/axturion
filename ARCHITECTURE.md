@@ -1,279 +1,92 @@
-# ATS Platform – Architecture Overview
+# MATS Architecture
 
-## 1. Vision
+MATS is a workflow-driven recruitment infrastructure platform.
 
-This project is a backend-first, workflow-driven ATS (Applicant Tracking System).
-
-Core principles:
-
-- Workflow configuration over hardcoded behavior
-- Service-layer business logic
-- Explicit and readable code
-- Minimal framework leakage
-- Deterministic runtime behavior
-- Testable domain logic
-
-The system is designed in layers, not as CRUD endpoints.
+The architecture prioritizes structural correctness, workflow isolation, and governance alignment.
 
 ---
 
-## 2. High-Level Architecture
+## Architectural Goals
 
-The backend is organized into four conceptual layers:
-
-### 2.1 Runtime Workflow Engine
-
-Responsible for:
-
-- Moving applications between stages
-- Validating transitions
-- Creating audit logs
-- Triggering automation events
-- Writing timeline activities
-
-Core file:
-- `service.py`
-
-Important properties:
-
-- Stage transitions are validated against `WorkflowTransition`
-- Invalid transitions raise domain exceptions
-- All mutations are atomic (single DB transaction)
-- Automation runs within the same transaction
+- Strict workflow ↔ application isolation
+- No cross-workflow data leakage
+- Deterministic reporting
+- Explicit transition enforcement
+- Service-layer integrity validation
+- On-premise compatibility
 
 ---
 
-### 2.2 Workflow Editor (Configuration Layer)
+## Layered Architecture
 
-Responsible for:
+### 1. Domain Layer
 
-- Creating workflow stages
-- Removing workflow stages
-- Creating transitions
-- Removing transitions
-- Reading workflow definitions
+- Pure SQLAlchemy models
+- No framework imports
+- Explicit workflow binding (Application.workflow_id)
 
-Core file:
-- `workflow_editor_service.py`
+### 2. Service Layer
 
-Important properties:
+All business logic lives here.
 
-- Stage names are unique per workflow (enforced in service layer)
-- Integrity rules are enforced in services
-- API layer only maps exceptions to HTTP errors
+Responsibilities:
 
-This layer treats workflows as configuration data.
+- Transition validation
+- Stage mutation integrity
+- Workflow isolation enforcement
+- Reporting aggregation
+- Automation triggers
+- Audit logging
 
----
+No HTTP parsing.
+No FastAPI coupling.
 
-### 2.3 Workflow Query Layer
+### 3. API Layer
 
-Responsible for:
+- Request validation (Pydantic)
+- Exception mapping
+- No business logic
 
-- Exposing read-only queries
-- Determining allowed transitions for an application
+### 4. Reporting Layer
 
-Core file:
-- `workflow_query_service.py`
+Workflow-scoped reporting:
 
-Important properties:
+- Stage distribution
+- Stage duration
+- Zero-count stage inclusion
+- Deterministic time handling
 
-- No mutations
-- No side effects
-- No commit calls
+### 5. Automation Layer
 
----
+Event-driven:
 
-### 2.4 Automation Engine
+- Stage change triggers
+- Rule evaluation
+- Activity logging
 
-Responsible for:
-
-- Listening to domain events
-- Evaluating rules
-- Creating activities or performing actions
-
-Core file:
-- `automation/service.py`
-
-Important properties:
-
-- Rule-based
-- Runs inside the same DB transaction as the triggering mutation
-- Currently supports:
-  - create_activity
-  - send_email (mocked as activity)
+Runs inside the same DB transaction.
 
 ---
 
-## 3. Data Model Overview
+## Workflow Integrity Model
 
-### Workflow
+Applications are explicitly bound to a workflow.
 
-- id (UUID)
-- name
+Transitions are validated per workflow context.
 
-### WorkflowStage
+This guarantees:
 
-- id (UUID)
-- workflow_id (UUID FK)
-- name
-- order
-
-### WorkflowTransition
-
-- id (UUID)
-- workflow_id (UUID FK)
-- from_stage (string)
-- to_stage (string)
-
-### Application
-
-- id (UUID)
-- candidate_id
-- job_id
-- stage (string)
-- status
-
-### Activity
-
-- id (UUID)
-- entity_type
-- entity_id
-- type
-- message
-- payload (JSON)
-- created_at
+- Multi-workflow isolation
+- Governance-safe deployment
+- Predictable runtime behavior
 
 ---
 
-## 4. Important Architectural Decisions
+## Design Philosophy
 
-### 4.1 Service-Layer First
+MATS prioritizes:
 
-All business logic lives in service files.
-API routes:
-
-- Parse input
-- Call service
-- Map exceptions
-
-No business logic in routes.
-
----
-
-### 4.2 No Repository Layer
-
-We intentionally avoid adding an abstraction layer on top of SQLAlchemy.
-
-Reason:
-- Keep code explicit
-- Avoid unnecessary abstraction
-- Preserve clarity
-
----
-
-### 4.3 No Migrations (Yet)
-
-Schema is currently managed via:
-
-- `Base.metadata.create_all()`
-- Dev-time column sync
-
-Future improvement:
-- Alembic migration flow
-
----
-
-## 5. Known Architectural Limitations
-
-These are explicit trade-offs in the current version.
-
-### 5.1 Applications Are Not Linked to Workflows
-
-`Application` does NOT have a `workflow_id`.
-
-Implication:
-
-- Runtime transition validation does not filter by workflow.
-- Transitions are effectively global by stage name.
-- Multiple workflows are not safely isolated.
-
-Current system behaves as:
-
-> Single-workflow runtime with multi-workflow configuration support.
-
----
-
-### 5.2 Transition Isolation
-
-`WorkflowTransition.workflow_id` exists, but:
-
-- Runtime validation does not filter by it.
-- Allowed transitions query does not filter by it.
-
-This will require a model change to fix properly.
-
----
-
-### 5.3 Stage Removal Is Globally Restricted
-
-When removing a stage:
-
-- We must block removal if any `Application.stage` equals that stage name.
-- Because applications are not workflow-scoped.
-
----
-
-## 6. What This System Currently Is
-
-- A deterministic workflow engine
-- With configurable transitions
-- With event-driven automation
-- With append-only activity tracking
-- With strong service-layer separation
-- Suitable for single-workflow production use
-
----
-
-## 7. What This System Is Not (Yet)
-
-- Not fully multi-workflow isolated
-- Not migration-driven
-- Not multi-tenant
-- Not permission-aware
-- Not versioned workflows
-- Not asynchronous job-based
-
----
-
-## 8. Future Architectural Milestone
-
-To support true multi-workflow isolation:
-
-Minimal required change:
-
-Option A:
-- Add `workflow_id` to `Application`
-
-Option B:
-- Add `workflow_id` to `Job`
-- Derive Application workflow via Job
-
-Runtime validation must then:
-
-- Filter transitions by workflow_id
-- Filter allowed transitions by workflow_id
-
-This will be introduced in a future milestone.
-
----
-
-## 9. Current Stability Status
-
-- Runtime stable
-- Editor read stable
-- Editor write in progress
-- Tests green
-- Docker startup deterministic
-
-System maturity: Early-stage but architecturally structured.
+- Clarity over abstraction
+- Explicit logic over magic
+- Long-term stability over feature velocity
+- Structural governance over rapid expansion
