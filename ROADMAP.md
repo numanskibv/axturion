@@ -51,6 +51,10 @@ Focus: integrations and broader applicability.
 - Additional domain use cases beyond ATS
 - Lightweight test coverage for core services
 - Optional reference frontend (out of scope by default)
+- Multi-organization isolation (governance deployments)
+- Versioned workflow configuration
+- Enterprise governance layer
+- Advanced audit and compliance reporting
 
 ---
 

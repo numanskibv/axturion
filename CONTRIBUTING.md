@@ -1,59 +1,36 @@
-# Contributing
+# Contributing to MATS
 
-Thank you for your interest in contributing to this project.
+Thank you for your interest in contributing.
 
-This repository is intentionally **architecture-driven** and
-values clarity, correctness, and long-term maintainability.
-
----
-
-## Before You Start
-
-Please open an issue to discuss:
-- architectural changes
-- new features
-- workflow or automation behavior
-
-This helps align expectations and avoid rework.
+MATS follows a controlled open-core model.
+Architectural alignment is prioritized over feature volume.
 
 ---
 
-## Contribution Guidelines
+## Contribution Principles
 
-- Keep changes small and focused
-- Follow existing service-layer patterns
-- Do not introduce framework logic into domain or services
-- Prefer explicit code over clever abstractions
-- Add comments where behavior may not be obvious
-
----
-
-## Scope & Expectations
-
-This project is:
-- backend-first
-- configuration-driven
-- workflow-centric
-
-The following are currently out of scope:
-- full frontend applications
-- SaaS/multi-tenant setups
-- enterprise-specific customizations
+- Respect service-layer boundaries
+- Preserve workflow isolation
+- Maintain deterministic reporting
+- Avoid introducing framework coupling
+- Keep changes focused and minimal
 
 ---
 
 ## Pull Requests
 
-- One logical change per pull request
-- Reference an existing issue where applicable
-- Describe *why* the change exists, not just *what* it does
+Please ensure:
 
-Pull requests may be declined if they conflict with
-the architectural direction of the project.
+- Tests pass
+- New behavior is covered by tests
+- No unrelated refactors are included
+- Architectural principles are respected
+
+Pull requests may be declined if they conflict with long-term architectural direction.
 
 ---
 
-## Code of Conduct
+## Discussions
 
-Be respectful and constructive.
-This project favors thoughtful discussion over rapid iteration.
+Feature discussions are welcome.
+However, roadmap decisions remain with core maintainers.
