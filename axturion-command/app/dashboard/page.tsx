@@ -6,9 +6,8 @@ import CommandLayout from "@/components/layout/CommandLayout";
 import DashboardError from "@/components/dashboard/DashboardError";
 import StageAgingTable from "@/components/dashboard/StageAgingTable";
 import StageDurationTable from "@/components/dashboard/StageDurationTable";
-import TimeToCloseCard from "@/components/dashboard/TimeToCloseCard";
-import SLABreachCard from "@/components/dashboard/SLABreachCard";
 import WorkflowSelector from "@/components/dashboard/WorkflowSelector";
+import CommandStrip from "@/components/dashboard/CommandStrip";
 
 import { useStageAging, useStageDurationSummary, useTimeToClose } from "@/hooks/useLifecycle";
 import { usePolicyConfig } from "@/hooks/usePolicyConfig";
@@ -107,49 +106,39 @@ function DashboardMetrics({ workflowId }: { workflowId: string }) {
     return (
         <>
             <div>
-                {timeToClose.loading && !timeToClose.data ? (
-                    <SkeletonBlock heightClass="h-28" />
-                ) : timeToClose.error ? (
-                    <DashboardError title={t("timeToClose.title")} message={timeToClose.error.message} />
-                ) : timeToClose.data ? (
-                    <TimeToCloseCard stats={timeToClose.data} />
-                ) : null}
+                <CommandStrip
+                    openCount={stageAging.data?.length ?? 0}
+                    breachCount={breachMetrics.breachCount}
+                    breachPercent={breachMetrics.breachPercent}
+                    avgTimeToClose={timeToClose.data?.avg_seconds}
+                />
             </div>
 
-            <div>
-                {stageAging.loading && !stageAging.data ? (
-                    <SkeletonBlock heightClass="h-28" />
-                ) : stageAging.error ? (
-                    <DashboardError title={t("slaBreaches.title")} message={stageAging.error.message} />
-                ) : (
-                    <SLABreachCard
-                        total={breachMetrics.total}
-                        breachCount={breachMetrics.breachCount}
-                        breachPercent={breachMetrics.breachPercent}
-                        slaDays={slaDays}
-                    />
-                )}
-            </div>
-
-            <div>
-                {stageAging.loading && !stageAging.data ? (
-                    <SkeletonBlock heightClass="h-64" />
-                ) : stageAging.error ? (
-                    <DashboardError title={t("stageAging.title")} message={stageAging.error.message} />
-                ) : stageAging.data ? (
-                    <StageAgingTable items={stageAging.data} slaDays={policy.policy?.stage_aging_sla_days ?? 7} />
-                ) : null}
-            </div>
-
-            <div>
+            <section className="space-y-2">
+                <h2 className="text-sm font-semibold">{t("sections.pipelineHealth")}</h2>
                 {stageDuration.loading && !stageDuration.data ? (
                     <SkeletonBlock heightClass="h-64" />
                 ) : stageDuration.error ? (
-                    <DashboardError title={t("stageDuration.title")} message={stageDuration.error.message} />
+                    <DashboardError title={t("sections.pipelineHealth")} message={stageDuration.error.message} />
                 ) : stageDuration.data ? (
-                    <StageDurationTable items={stageDuration.data} />
+                    <StageDurationTable items={stageDuration.data} hideHeader />
                 ) : null}
-            </div>
+            </section>
+
+            <section className="space-y-2">
+                <h2 className="text-sm font-semibold">{t("sections.operationalQueue")}</h2>
+                {stageAging.loading && !stageAging.data ? (
+                    <SkeletonBlock heightClass="h-64" />
+                ) : stageAging.error ? (
+                    <DashboardError title={t("sections.operationalQueue")} message={stageAging.error.message} />
+                ) : stageAging.data ? (
+                    <StageAgingTable
+                        items={stageAging.data}
+                        slaDays={policy.policy?.stage_aging_sla_days ?? 7}
+                        hideHeader
+                    />
+                ) : null}
+            </section>
         </>
     );
 }

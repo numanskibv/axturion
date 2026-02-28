@@ -12,6 +12,16 @@
             "placeholder": "Selecteer workflow",
             "loading": "Workflows laden…"
         },
+        "commandStrip": {
+            "openCount": "Open",
+            "breachCount": "SLA overschrijdingen",
+            "breachPercent": "Overschrijdingen %",
+            "avgTimeToClose": "Gem. tijd tot sluiten"
+        },
+        "sections": {
+            "pipelineHealth": "Pijplijngezondheid",
+            "operationalQueue": "Operationele wachtrij"
+        },
         "timeToClose": {
             "title": "Tijd tot sluiten",
             "subtitle": "Gesloten sollicitaties (organisatie)",

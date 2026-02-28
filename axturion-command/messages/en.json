@@ -12,6 +12,16 @@
             "placeholder": "Select workflow",
             "loading": "Loading workflows…"
         },
+        "commandStrip": {
+            "openCount": "Open",
+            "breachCount": "SLA breaches",
+            "breachPercent": "Breach %",
+            "avgTimeToClose": "Avg time to close"
+        },
+        "sections": {
+            "pipelineHealth": "Pipeline Health",
+            "operationalQueue": "Operational Queue"
+        },
         "timeToClose": {
             "title": "Time to Close",
             "subtitle": "Closed applications (org-scoped)",

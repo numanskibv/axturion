@@ -6,19 +6,23 @@ import { useTranslations } from "next-intl";
 
 export default function StageDurationTable({
     items,
+    hideHeader,
 }: {
     items: StageDurationSummaryItem[];
+    hideHeader?: boolean;
 }) {
     const t = useTranslations("dashboard");
 
     return (
         <div className="rounded-[length:var(--ax-radius)] border border-[color:var(--ax-border)] bg-[color:var(--ax-surface)] p-4">
-            <div className="mb-3 flex items-center justify-between">
-                <h2 className="text-sm font-semibold">{t("stageDuration.title")}</h2>
-                <div className="text-xs text-[color:var(--ax-muted)]">
-                    {t("stageDuration.stagesCount", { count: items.length })}
+            {hideHeader ? null : (
+                <div className="mb-3 flex items-center justify-between">
+                    <h2 className="text-sm font-semibold">{t("stageDuration.title")}</h2>
+                    <div className="text-xs text-[color:var(--ax-muted)]">
+                        {t("stageDuration.stagesCount", { count: items.length })}
+                    </div>
                 </div>
-            </div>
+            )}
 
             <div className="overflow-x-auto">
                 <table className="w-full text-left text-sm">

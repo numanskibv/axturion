@@ -12,20 +12,24 @@ function toSlaSeconds(slaDays: number): number {
 export default function StageAgingTable({
     items,
     slaDays,
+    hideHeader,
 }: {
     items: StageAgingItem[];
     slaDays?: number;
+    hideHeader?: boolean;
 }) {
     const t = useTranslations("dashboard");
     const slaSeconds = toSlaSeconds(slaDays ?? 7);
     return (
         <div className="rounded-[length:var(--ax-radius)] border border-[color:var(--ax-border)] bg-[color:var(--ax-surface)] p-4">
-            <div className="mb-3 flex items-center justify-between">
-                <h2 className="text-sm font-semibold">{t("stageAging.title")}</h2>
-                <div className="text-xs text-[color:var(--ax-muted)]">
-                    {t("stageAging.openCount", { count: items.length })}
+            {hideHeader ? null : (
+                <div className="mb-3 flex items-center justify-between">
+                    <h2 className="text-sm font-semibold">{t("stageAging.title")}</h2>
+                    <div className="text-xs text-[color:var(--ax-muted)]">
+                        {t("stageAging.openCount", { count: items.length })}
+                    </div>
                 </div>
-            </div>
+            )}
 
             <div className="overflow-x-auto">
                 <table className="w-full text-left text-sm">
