@@ -8,6 +8,7 @@ import DashboardError from "@/components/dashboard/DashboardError";
 import StageAgingTable from "@/components/dashboard/StageAgingTable";
 import StageDurationTable from "@/components/dashboard/StageDurationTable";
 import TimeToCloseCard from "@/components/dashboard/TimeToCloseCard";
+import SLABreachCard from "@/components/dashboard/SLABreachCard";
 
 import { useStageAging, useStageDurationSummary, useTimeToClose } from "@/hooks/useLifecycle";
 import { usePolicyConfig } from "@/hooks/usePolicyConfig";
@@ -30,6 +31,17 @@ function DashboardInner() {
     const stageAging = useStageAging();
     const timeToClose = useTimeToClose();
     const policy = usePolicyConfig();
+
+    const slaDays = policy.policy?.stage_aging_sla_days ?? 7;
+    const slaSeconds = Math.max(1, Math.floor(slaDays)) * 24 * 60 * 60;
+
+    const breachMetrics = useMemo(() => {
+        const items = stageAging.data ?? [];
+        const total = items.length;
+        const breachCount = items.reduce((acc, row) => (row.age_seconds > slaSeconds ? acc + 1 : acc), 0);
+        const breachPercent = total === 0 ? 0 : (breachCount / total) * 100;
+        return { total, breachCount, breachPercent };
+    }, [stageAging.data, slaSeconds]);
 
     const inferredWorkflowId = useMemo(() => {
         const first = stageAging.data?.[0];
@@ -57,6 +69,21 @@ function DashboardInner() {
                     ) : timeToClose.data ? (
                         <TimeToCloseCard stats={timeToClose.data} />
                     ) : null}
+                </div>
+
+                <div>
+                    {stageAging.loading && !stageAging.data ? (
+                        <SkeletonBlock heightClass="h-28" />
+                    ) : stageAging.error ? (
+                        <DashboardError title="SLA Breaches" message={stageAging.error.message} />
+                    ) : (
+                        <SLABreachCard
+                            total={breachMetrics.total}
+                            breachCount={breachMetrics.breachCount}
+                            breachPercent={breachMetrics.breachPercent}
+                            slaDays={slaDays}
+                        />
+                    )}
                 </div>
 
                 <div>
