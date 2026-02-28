@@ -18,6 +18,7 @@ from app.services.lifecycle_reporting_service import (
     time_to_close_stats,
     WorkflowNotFoundError as LifecycleWorkflowNotFoundError,
 )
+from app.reporting.window import ReportingWindow
 from app.api.schemas.reporting import (
     WorkflowStageSummaryResponse,
     WorkflowStageDurationResponse,
@@ -117,8 +118,9 @@ def reporting_stage_aging(
     ctx: RequestContext = Depends(get_request_context),
     db: Session = Depends(get_db),
 ):
+    window = ReportingWindow.all_time()
     return list_stage_aging(
-        db, ctx, workflow_id=workflow_id, limit=limit, offset=offset
+        db, ctx, workflow_id=workflow_id, window=window, limit=limit, offset=offset
     )
 
 

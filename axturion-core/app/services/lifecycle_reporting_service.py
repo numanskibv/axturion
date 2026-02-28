@@ -7,13 +7,14 @@ from statistics import median
 from typing import Any
 from uuid import UUID
 
-from sqlalchemy import func
+from sqlalchemy import String, cast, func
 from sqlalchemy.orm import Session
 
 from app.core.request_context import RequestContext
 from app.domain.application.models import Application
 from app.domain.audit.models import AuditLog
 from app.domain.workflow.models import Workflow
+from app.reporting.window import ReportingWindow
 
 
 class WorkflowNotFoundError(Exception):
@@ -25,6 +26,10 @@ _STAGE_CHANGE_ACTIONS: tuple[str, ...] = (
     # 4-eyes stage transitions use a different audit action name.
     "stage_transition_approved",
 )
+
+
+def _transition_actions() -> set[str]:
+    return {"stage_changed", "stage_transition_approved"}
 
 
 def _now_utc() -> datetime:
@@ -95,11 +100,37 @@ def list_stage_aging(
     ctx: RequestContext,
     *,
     workflow_id: UUID | None = None,
+    window: ReportingWindow,
     limit: int = 50,
     offset: int = 0,
 ) -> list[dict[str, Any]]:
     limit = max(1, min(int(limit), 500))
     offset = max(0, int(offset))
+
+    transition_actions = _transition_actions()
+
+    last_transition_q = db.query(
+        AuditLog.entity_id.label("application_id"),
+        func.max(AuditLog.created_at).label("last_transition_at"),
+    ).filter(
+        AuditLog.organization_id == ctx.organization_id,
+        AuditLog.entity_type == "application",
+        AuditLog.action.in_(transition_actions),
+    )
+
+    if window.is_active():
+        if window.from_datetime is not None:
+            last_transition_q = last_transition_q.filter(
+                AuditLog.created_at >= window.from_datetime
+            )
+        if window.to_datetime is not None:
+            last_transition_q = last_transition_q.filter(
+                AuditLog.created_at < window.to_datetime
+            )
+
+    last_transition_sq = last_transition_q.group_by(AuditLog.entity_id).subquery(
+        "last_transition"
+    )
 
     q = (
         db.query(
@@ -107,6 +138,12 @@ def list_stage_aging(
             Application.workflow_id,
             Application.stage,
             Application.created_at,
+            last_transition_sq.c.last_transition_at,
+        )
+        .outerjoin(
+            last_transition_sq,
+            func.replace(last_transition_sq.c.application_id, "-", "")
+            == func.replace(cast(Application.id, String), "-", ""),
         )
         .filter(
             Application.organization_id == ctx.organization_id,
@@ -122,29 +159,11 @@ def list_stage_aging(
     if not rows:
         return []
 
-    app_id_strs = [str(app_id) for (app_id, _wf_id, _stage, _created_at) in rows]
-
-    latest_changes = (
-        db.query(AuditLog.entity_id, func.max(AuditLog.created_at))
-        .filter(
-            AuditLog.organization_id == ctx.organization_id,
-            AuditLog.entity_type == "application",
-            AuditLog.action.in_(_STAGE_CHANGE_ACTIONS),
-            AuditLog.entity_id.in_(app_id_strs),
-        )
-        .group_by(AuditLog.entity_id)
-        .all()
-    )
-    latest_by_entity_id: dict[str, datetime] = {
-        str(entity_id): _coerce_dt(dt) or _now_utc()
-        for (entity_id, dt) in latest_changes
-    }
-
     now = _now_utc()
     items: list[dict[str, Any]] = []
-    for app_id, wf_id, stage, created_at in rows:
+    for app_id, wf_id, stage, created_at, last_transition_at in rows:
         created = _coerce_dt(created_at) or now
-        last_change = latest_by_entity_id.get(str(app_id))
+        last_change = _coerce_dt(last_transition_at)
         basis = last_change if last_change is not None else created
         age_seconds = int(max(0.0, (now - basis).total_seconds()))
 

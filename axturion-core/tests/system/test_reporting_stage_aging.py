@@ -228,3 +228,80 @@ def test_reporting_stage_aging_org_scoped_and_exact_seconds(
 
     assert by_id[str(app2.id)]["current_stage"] == "screening"
     assert by_id[str(app2.id)]["age_seconds"] == 10
+
+
+def test_reporting_stage_aging_uses_latest_transition_timestamp(
+    client: TestClient, db, org, monkeypatch
+):
+    from app.core.request_context import RequestContext
+    from app.domain.application.models import Application
+    from app.domain.workflow.models import Workflow
+    from app.services.audit_service import append_audit_log
+
+    recruiter = _make_user(db, org, "recruiter", "reporting-stage-aging-latest@local")
+    actor = _make_user(db, org, "hr_admin", "reporting-stage-aging-latest-actor@local")
+
+    wf = Workflow(organization_id=org.id, name="wf")
+    db.add(wf)
+    db.commit()
+    db.refresh(wf)
+
+    now = datetime(2026, 2, 28, 12, 0, 0, tzinfo=timezone.utc)
+    monkeypatch.setattr(
+        "app.services.lifecycle_reporting_service._now_utc", lambda: now
+    )
+
+    created_at = now - timedelta(seconds=10_000)
+    app = Application(
+        organization_id=org.id,
+        workflow_id=wf.id,
+        stage="screening",
+        status="active",
+        created_at=created_at,
+        stage_entered_at=created_at,
+    )
+    db.add(app)
+    db.commit()
+    db.refresh(app)
+
+    ctx = RequestContext(
+        organization_id=org.id,
+        actor_id=str(actor.id),
+        role="hr_admin",
+        scopes=set(),
+    )
+
+    append_audit_log(
+        db,
+        ctx,
+        entity_type="application",
+        entity_id=str(app.id),
+        action="stage_changed",
+        payload="applied->screening",
+        created_at=now - timedelta(seconds=500),
+    )
+    append_audit_log(
+        db,
+        ctx,
+        entity_type="application",
+        entity_id=str(app.id),
+        action="stage_changed",
+        payload="screening->interview",
+        created_at=now - timedelta(seconds=30),
+    )
+    db.commit()
+
+    resp = client.get(
+        "/reporting/stage-aging",
+        headers={
+            "X-Org-Id": str(org.id),
+            "X-User-Id": str(recruiter.id),
+        },
+    )
+    assert resp.status_code == 200
+    body = resp.json()
+    assert isinstance(body, list)
+
+    by_id = {row["application_id"]: row for row in body}
+    assert str(app.id) in by_id
+    assert by_id[str(app.id)]["age_seconds"] == 30
