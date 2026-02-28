@@ -13,6 +13,13 @@ export type StageDurationSummaryItem = {
     p90_duration_seconds: number;
 };
 
+export type StageDurationBreakdownItem = {
+    stage: string;
+    count: number;
+    median_seconds: number;
+    p90_seconds: number;
+};
+
 export type TimeToCloseResult = "hired" | "rejected";
 
 export type TimeToCloseStatsResponse = {
@@ -81,6 +88,21 @@ function validateStageDurationSummaryItem(value: unknown): StageDurationSummaryI
         avg_duration_seconds: value.avg_duration_seconds,
         median_duration_seconds: value.median_duration_seconds,
         p90_duration_seconds: value.p90_duration_seconds,
+    };
+}
+
+function validateStageDurationBreakdownItem(value: unknown): StageDurationBreakdownItem {
+    if (!isRecord(value)) throw new Error("Invalid stage duration breakdown item");
+    if (typeof value.stage !== "string") throw new Error("Invalid stage");
+    if (!isFiniteNumber(value.count)) throw new Error("Invalid count");
+    if (!isFiniteNumber(value.median_seconds)) throw new Error("Invalid median_seconds");
+    if (!isFiniteNumber(value.p90_seconds)) throw new Error("Invalid p90_seconds");
+
+    return {
+        stage: value.stage,
+        count: value.count,
+        median_seconds: value.median_seconds,
+        p90_seconds: value.p90_seconds,
     };
 }
 
@@ -202,4 +224,35 @@ export async function fetchStageDurationSummary(
 
     if (!Array.isArray(data)) throw new Error("Invalid stage duration summary response");
     return data.map(validateStageDurationSummaryItem);
+}
+
+export async function fetchStageDurationBreakdown(
+    workflowId: string,
+    params?: BaseFetchParams & { from?: string; to?: string },
+): Promise<StageDurationBreakdownItem[]> {
+    const trimmedWorkflowId = (workflowId ?? "").trim();
+    if (!trimmedWorkflowId) throw new Error("workflowId is required");
+
+    const { apiUrl, orgId, userId } = requireBaseParams(params);
+
+    const url = new URL("/reporting/stage-duration-breakdown", apiUrl);
+    url.searchParams.set("workflow_id", trimmedWorkflowId);
+    const from = params?.from?.trim();
+    const to = params?.to?.trim();
+    if (from) url.searchParams.set("from", from);
+    if (to) url.searchParams.set("to", to);
+
+    const data = await fetchJson(url.toString(), {
+        method: "GET",
+        headers: {
+            Accept: "application/json",
+            "X-Org-Id": orgId,
+            "X-User-Id": userId,
+        },
+        cache: "no-store",
+        signal: params?.signal,
+    });
+
+    if (!Array.isArray(data)) throw new Error("Invalid stage duration breakdown response");
+    return data.map(validateStageDurationBreakdownItem);
 }
