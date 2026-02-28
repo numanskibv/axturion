@@ -5,6 +5,13 @@
     "dashboard": {
         "title": "Levenscyclusdashboard",
         "subtitle": "Operationele statistieken per workflow",
+        "emptyState": {
+            "selectWorkflow": "Selecteer een workflow om prestatiedata te bekijken."
+        },
+        "workflowSelector": {
+            "placeholder": "Selecteer workflow",
+            "loading": "Workflows laden…"
+        },
         "timeToClose": {
             "title": "Tijd tot sluiten",
             "subtitle": "Gesloten sollicitaties (organisatie)",

@@ -40,7 +40,9 @@ function getApiUrl(): string {
     return apiUrl;
 }
 
-export function useStageAging(): UseLifecycleResult<StageAgingItem[]> {
+export function useStageAging(args: { workflowId: string }): UseLifecycleResult<StageAgingItem[]> {
+    const normalizedWorkflowId = useMemo(() => (args.workflowId ?? "").trim(), [args.workflowId]);
+
     const [data, setData] = useState<StageAgingItem[] | null>(null);
     const [loading, setLoading] = useState<boolean>(true);
     const [error, setError] = useState<Error | null>(null);
@@ -51,14 +53,14 @@ export function useStageAging(): UseLifecycleResult<StageAgingItem[]> {
         try {
             const { orgId, userId } = getIdentityFromLocalStorage();
             const apiUrl = getApiUrl();
-            const result = await fetchStageAging({ apiUrl, orgId, userId, signal });
+            const result = await fetchStageAging({ apiUrl, orgId, userId, workflowId: normalizedWorkflowId, signal });
             setData(result);
             setLoading(false);
         } catch (err) {
             setLoading(false);
             setError(err instanceof Error ? err : new Error("Unknown error"));
         }
-    }, []);
+    }, [normalizedWorkflowId]);
 
     useEffect(() => {
         const controller = new AbortController();
@@ -74,7 +76,9 @@ export function useStageAging(): UseLifecycleResult<StageAgingItem[]> {
     return { data, loading, error, refetch };
 }
 
-export function useTimeToClose(): UseLifecycleResult<TimeToCloseStatsResponse> {
+export function useTimeToClose(args: { workflowId: string }): UseLifecycleResult<TimeToCloseStatsResponse> {
+    const normalizedWorkflowId = useMemo(() => (args.workflowId ?? "").trim(), [args.workflowId]);
+
     const [data, setData] = useState<TimeToCloseStatsResponse | null>(null);
     const [loading, setLoading] = useState<boolean>(true);
     const [error, setError] = useState<Error | null>(null);
@@ -85,14 +89,14 @@ export function useTimeToClose(): UseLifecycleResult<TimeToCloseStatsResponse> {
         try {
             const { orgId, userId } = getIdentityFromLocalStorage();
             const apiUrl = getApiUrl();
-            const result = await fetchTimeToClose({ apiUrl, orgId, userId, signal });
+            const result = await fetchTimeToClose({ apiUrl, orgId, userId, workflowId: normalizedWorkflowId, signal });
             setData(result);
             setLoading(false);
         } catch (err) {
             setLoading(false);
             setError(err instanceof Error ? err : new Error("Unknown error"));
         }
-    }, []);
+    }, [normalizedWorkflowId]);
 
     useEffect(() => {
         const controller = new AbortController();
@@ -109,7 +113,7 @@ export function useTimeToClose(): UseLifecycleResult<TimeToCloseStatsResponse> {
 }
 
 export function useStageDurationSummary(
-    workflowId: string,
+    workflowId: string | null,
 ): UseLifecycleResult<StageDurationSummaryItem[]> {
     const normalizedWorkflowId = useMemo(() => (workflowId ?? "").trim(), [workflowId]);
 

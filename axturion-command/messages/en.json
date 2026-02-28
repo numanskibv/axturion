@@ -5,6 +5,13 @@
     "dashboard": {
         "title": "Lifecycle Dashboard",
         "subtitle": "Operational metrics per workflow",
+        "emptyState": {
+            "selectWorkflow": "Select a workflow to view performance data."
+        },
+        "workflowSelector": {
+            "placeholder": "Select workflow",
+            "loading": "Loading workflows…"
+        },
         "timeToClose": {
             "title": "Time to Close",
             "subtitle": "Closed applications (org-scoped)",
