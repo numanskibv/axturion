@@ -10,6 +10,7 @@ import StageDurationTable from "@/components/dashboard/StageDurationTable";
 import TimeToCloseCard from "@/components/dashboard/TimeToCloseCard";
 
 import { useStageAging, useStageDurationSummary, useTimeToClose } from "@/hooks/useLifecycle";
+import { usePolicyConfig } from "@/hooks/usePolicyConfig";
 
 function SkeletonBlock({ heightClass }: { heightClass: string }) {
     return (
@@ -28,6 +29,7 @@ function DashboardInner() {
 
     const stageAging = useStageAging();
     const timeToClose = useTimeToClose();
+    const policy = usePolicyConfig();
 
     const inferredWorkflowId = useMemo(() => {
         const first = stageAging.data?.[0];
@@ -63,7 +65,10 @@ function DashboardInner() {
                     ) : stageAging.error ? (
                         <DashboardError title="Stage Aging" message={stageAging.error.message} />
                     ) : stageAging.data ? (
-                        <StageAgingTable items={stageAging.data} />
+                        <StageAgingTable
+                            items={stageAging.data}
+                            slaDays={policy.policy?.stage_aging_sla_days ?? 7}
+                        />
                     ) : null}
                 </div>
 

@@ -85,12 +85,17 @@ def test_get_policy_autocreates_defaults(client: TestClient, db, org):
     assert body["organization_id"] == str(org.id)
     assert body["require_4eyes_on_hire"] is False
     assert body["require_4eyes_on_ux_rollback"] is False
+    assert body["stage_aging_sla_days"] == 7
     assert body.get("candidate_retention_days") is None
     assert body.get("audit_retention_days") is None
     assert "created_at" in body
     assert "updated_at" in body
 
-    row = db.query(PolicyConfig).filter(PolicyConfig.organization_id == org.id).one_or_none()
+    row = (
+        db.query(PolicyConfig)
+        .filter(PolicyConfig.organization_id == org.id)
+        .one_or_none()
+    )
     assert row is not None
 
 
@@ -141,6 +146,7 @@ def test_put_policy_strict_write_and_audited(client: TestClient, db, org):
         json={
             "require_4eyes_on_hire": True,
             "require_4eyes_on_ux_rollback": True,
+            "stage_aging_sla_days": 14,
             "candidate_retention_days": 365,
         },
     )
@@ -149,6 +155,7 @@ def test_put_policy_strict_write_and_audited(client: TestClient, db, org):
     body = resp.json()
     assert body["require_4eyes_on_hire"] is True
     assert body["require_4eyes_on_ux_rollback"] is True
+    assert body["stage_aging_sla_days"] == 14
     assert body["candidate_retention_days"] == 365
     assert body.get("audit_retention_days") is None
 
@@ -169,5 +176,6 @@ def test_put_policy_strict_write_and_audited(client: TestClient, db, org):
     assert payload["organization_id"] == str(org.id)
     assert payload["require_4eyes_on_hire"] is True
     assert payload["require_4eyes_on_ux_rollback"] is True
+    assert payload["stage_aging_sla_days"] == 14
     assert payload["candidate_retention_days"] == 365
     assert payload["audit_retention_days"] is None

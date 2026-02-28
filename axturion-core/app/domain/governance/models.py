@@ -25,8 +25,13 @@ class PolicyConfig(Base):
     require_4eyes_on_hire = Column(Boolean, default=False, nullable=False)
     require_4eyes_on_ux_rollback = Column(Boolean, default=False, nullable=False)
 
+    # SLA for stage aging highlighting in the Command dashboard.
+    stage_aging_sla_days = Column(Integer, default=7, nullable=False)
+
     candidate_retention_days = Column(Integer, nullable=True)
     audit_retention_days = Column(Integer, nullable=True)
 
     created_at = Column(DateTime, default=_utcnow_naive, nullable=False)
-    updated_at = Column(DateTime, default=_utcnow_naive, onupdate=_utcnow_naive, nullable=False)
+    updated_at = Column(
+        DateTime, default=_utcnow_naive, onupdate=_utcnow_naive, nullable=False
+    )

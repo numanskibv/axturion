@@ -1,13 +1,19 @@
 import type { StageAgingItem } from "@/lib/lifecycleApi";
 import { formatDuration } from "@/lib/timeFormat";
 
-const SEVEN_DAYS_SECONDS = 7 * 24 * 60 * 60;
+function toSlaSeconds(slaDays: number): number {
+    const days = Number.isFinite(slaDays) ? Math.max(1, Math.floor(slaDays)) : 7;
+    return days * 24 * 60 * 60;
+}
 
 export default function StageAgingTable({
     items,
+    slaDays,
 }: {
     items: StageAgingItem[];
+    slaDays?: number;
 }) {
+    const slaSeconds = toSlaSeconds(slaDays ?? 7);
     return (
         <div className="rounded-[var(--ax-radius)] border border-[var(--ax-border)] bg-[var(--ax-surface)] p-4">
             <div className="mb-3 flex items-center justify-between">
@@ -33,7 +39,7 @@ export default function StageAgingTable({
                             </tr>
                         ) : (
                             items.map((row) => {
-                                const isStale = row.age_seconds > SEVEN_DAYS_SECONDS;
+                                const isStale = row.age_seconds > slaSeconds;
                                 return (
                                     <tr
                                         key={row.application_id}
