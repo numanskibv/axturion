@@ -1,0 +1,43 @@
+services:
+  # After renaming DB identifiers, run: docker compose down -v
+  db:
+    image: postgres:16
+    container_name: axturion-db
+    environment:
+      POSTGRES_DB: axturion
+      POSTGRES_USER: axturion
+      POSTGRES_PASSWORD: axturion
+    ports:
+      - "5432:5432"
+    volumes:
+      - axturion_db_data:/var/lib/postgresql/data
+
+  axturion-core:
+    build:
+      context: ./axturion-core
+    container_name: axturion-core
+    ports:
+      - "8000:8000"
+    depends_on:
+      - db
+    environment:
+      DATABASE_URL: postgresql+psycopg://axturion:axturion@db:5432/axturion
+      ENV: dev
+      LOG_LEVEL: INFO
+
+  axturion-command:
+    build:
+      context: ./axturion-command
+      args:
+        NEXT_PUBLIC_DEV_MODE: "true"
+    container_name: axturion-command
+    ports:
+      - "3000:3000"
+    environment:
+      NEXT_PUBLIC_API_URL: http://axturion-core:8000
+      NEXT_PUBLIC_DEV_MODE: "true"
+    depends_on:
+      - axturion-core
+
+volumes:
+  axturion_db_data:

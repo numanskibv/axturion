@@ -1,4 +1,4 @@
-name: MATS CI
+name: AXTURION CI
 
 on:
   push:
@@ -18,34 +18,31 @@ jobs:
           POSTGRES_PASSWORD: ats
           POSTGRES_DB: ats
         ports:
-          - 5432:5432
+        - 5432:5432
         options: >-
-          --health-cmd="pg_isready -U ats -d ats"
-          --health-interval=5s
-          --health-timeout=5s
-          --health-retries=5
+          --health-cmd="pg_isready -U ats -d ats" --health-interval=5s --health-timeout=5s --health-retries=5
 
     env:
       DATABASE_URL: postgresql+psycopg://ats:ats@localhost:5432/ats
 
     steps:
-      - uses: actions/checkout@v4
+    - uses: actions/checkout@v4
 
-      - name: Setup Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
+    - name: Setup Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.12'
 
-      - name: Install dependencies
-        run: |
-          pip install -r backend/requirements.txt
+    - name: Install dependencies
+      run: |
+        pip install -r backend/requirements.txt
 
-      - name: Run Alembic migrations
-        run: |
-          cd backend
-          alembic upgrade head
+    - name: Run Alembic migrations
+      run: |
+        cd backend
+        alembic upgrade head
 
-      - name: Run tests
-        run: |
-          cd backend
-          PYTHONPATH=. pytest -q ../tests
+    - name: Run tests
+      run: |
+        cd backend
+        PYTHONPATH=. pytest -q ../tests

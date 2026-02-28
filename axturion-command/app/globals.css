@@ -1,0 +1,45 @@
+@import "tailwindcss";
+
+/* =========================================
+   AXTURION DESIGN TOKENS
+========================================= */
+
+:root {
+  /* Base */
+  --ax-bg: #0b1220;
+  --ax-surface: #111827;
+  --ax-border: #1f2937;
+  --ax-text: #e5e7eb;
+  --ax-muted: #6b7280;
+
+  /* Semantic */
+  --ax-primary: #2563eb;
+  --ax-primary-hover: #1d4ed8;
+
+  --ax-danger: #dc2626;
+  --ax-success: #16a34a;
+
+  /* Radius */
+  --ax-radius: 0.75rem;
+}
+
+/* =========================================
+   Optional Light Theme
+========================================= */
+
+[data-theme="light"] {
+  --ax-bg: #f9fafb;
+  --ax-surface: #ffffff;
+  --ax-border: #e5e7eb;
+  --ax-text: #111827;
+}
+
+/* =========================================
+   Global Application
+========================================= */
+
+body {
+  background: var(--ax-bg);
+  color: var(--ax-text);
+  font-family: var(--font-geist-sans), system-ui, sans-serif;
+}

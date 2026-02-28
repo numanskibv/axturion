@@ -1,0 +1,1 @@
+from .ux.models import UXConfig
