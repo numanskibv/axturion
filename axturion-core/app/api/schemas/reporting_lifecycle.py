@@ -21,6 +21,13 @@ class StageDurationSummaryItem(BaseModel):
     p90_duration_seconds: float
 
 
+class StageDurationBreakdownItem(BaseModel):
+    stage: str
+    count: int
+    median_seconds: int
+    p90_seconds: int
+
+
 class TimeToCloseStatsResponse(BaseModel):
     count: int
     avg_seconds: float

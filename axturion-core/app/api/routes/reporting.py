@@ -1,4 +1,6 @@
-from fastapi import APIRouter, Depends, HTTPException
+from datetime import datetime
+
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from uuid import UUID
 from app.core.db import get_db
@@ -19,12 +21,16 @@ from app.services.lifecycle_reporting_service import (
     WorkflowNotFoundError as LifecycleWorkflowNotFoundError,
 )
 from app.reporting.window import ReportingWindow
+from app.services.stage_duration_breakdown_service import (
+    list_stage_duration_breakdown,
+)
 from app.api.schemas.reporting import (
     WorkflowStageSummaryResponse,
     WorkflowStageDurationResponse,
 )
 from app.api.schemas.reporting_lifecycle import (
     StageAgingItem,
+    StageDurationBreakdownItem,
     StageDurationSummaryItem,
     TimeToCloseResult,
     TimeToCloseStatsResponse,
@@ -163,3 +169,30 @@ def reporting_time_to_close(
     db: Session = Depends(get_db),
 ):
     return time_to_close_stats(db, ctx, workflow_id=workflow_id, result=result)
+
+
+@router.get(
+    "/stage-duration-breakdown",
+    summary="Stage duration breakdown",
+    description=(
+        "Computes per-stage duration distribution by reconstructing transitions from audit log history. "
+        "Window semantics: stage intervals are clipped to the requested window; audit events are used as the source of truth for transitions. "
+        "Organization boundary: strictly org-scoped."
+    ),
+    response_model=list[StageDurationBreakdownItem],
+)
+def reporting_stage_duration_breakdown(
+    workflow_id: UUID,
+    from_: datetime | None = Query(default=None, alias="from"),
+    to: datetime | None = None,
+    _: None = Depends(require_scope(REPORTING_READ)),
+    ctx: RequestContext = Depends(get_request_context),
+    db: Session = Depends(get_db),
+):
+    try:
+        window = ReportingWindow(from_datetime=from_, to_datetime=to)
+        window.validate()
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+
+    return list_stage_duration_breakdown(db, ctx, workflow_id=workflow_id, window=window)
