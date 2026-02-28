@@ -23,3 +23,7 @@ venv/
 deploy/.env.staging
 deploy/.env.production
 
+# Local dev notes/scripts
+scripts/
+testgegevens.md
+
