@@ -2,12 +2,16 @@ from fastapi import APIRouter, Depends, HTTPException, Response
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
+from app.api.deps import get_request_context, require_scope
+from app.core.scopes import WORKFLOW_WRITE
+from app.core.request_context import RequestContext
 from app.core.db import get_db
 from app.services.workflow_editor_service import (
     get_workflow_definition,
     add_workflow_stage,
     add_workflow_transition,
     remove_workflow_transition,
+    OrganizationAccessError,
     WorkflowNotFoundError,
     DuplicateStageNameError,
     StageNotFoundError,
@@ -43,10 +47,14 @@ Errors: Returns not-found when the workflow does not exist.
 )
 def read_workflow_definition(  # Handler function for the endpoint to get a workflow definition by its ID.
     workflow_id: str,
+    ctx: RequestContext = Depends(get_request_context),
     db: Session = Depends(get_db),
 ):
     """Retrieve the editable workflow definition (stages and transitions)."""
-    workflow = get_workflow_definition(db, workflow_id)
+    try:
+        workflow = get_workflow_definition(db, ctx, workflow_id)
+    except OrganizationAccessError as e:
+        raise HTTPException(status_code=403, detail=str(e))
 
     if not workflow:
         raise HTTPException(status_code=404, detail="Workflow not found")
@@ -72,17 +80,24 @@ Errors: Returns not-found when the workflow does not exist; returns a validation
 def create_workflow_stage(
     workflow_id: str,
     body: CreateWorkflowStageRequest,
+    _: None = Depends(require_scope(WORKFLOW_WRITE)),
+    ctx: RequestContext = Depends(get_request_context),
     db: Session = Depends(get_db),
 ):
     """Create a stage within a workflow, enforcing name uniqueness and ordering rules."""
     try:
         stage = add_workflow_stage(
             db,
+            ctx,
             workflow_id=workflow_id,
             name=body.name,
             order=body.order,
         )
         return stage
+    except OrganizationAccessError:
+        raise HTTPException(
+            status_code=403, detail="Cross-organization access is forbidden"
+        )
     except WorkflowNotFoundError:
         raise HTTPException(status_code=404, detail="Workflow not found")
     except DuplicateStageNameError:
@@ -113,17 +128,24 @@ Transitions define allowed application movement paths.
 def create_workflow_transition(
     workflow_id: str,
     body: WorkflowTransitionRequest,
+    _: None = Depends(require_scope(WORKFLOW_WRITE)),
+    ctx: RequestContext = Depends(get_request_context),
     db: Session = Depends(get_db),
 ):
     """Create a workflow transition, enforcing basic integrity constraints."""
     try:
         transition = add_workflow_transition(
             db,
+            ctx,
             workflow_id=workflow_id,
             from_stage=body.from_stage,
             to_stage=body.to_stage,
         )
         return transition
+    except OrganizationAccessError:
+        raise HTTPException(
+            status_code=403, detail="Cross-organization access is forbidden"
+        )
     except WorkflowNotFoundError:
         raise HTTPException(status_code=404, detail="Workflow not found")
     except StageNotFoundError:
@@ -150,15 +172,22 @@ This operation affects allowed stage movements.
 def delete_workflow_transition(
     workflow_id: str,
     body: WorkflowTransitionRequest,
+    _: None = Depends(require_scope(WORKFLOW_WRITE)),
+    ctx: RequestContext = Depends(get_request_context),
     db: Session = Depends(get_db),
 ):
     """Remove a workflow transition if it exists; otherwise return not-found."""
     try:
         remove_workflow_transition(
             db,
+            ctx,
             workflow_id=workflow_id,
             from_stage=body.from_stage,
             to_stage=body.to_stage,
+        )
+    except OrganizationAccessError:
+        raise HTTPException(
+            status_code=403, detail="Cross-organization access is forbidden"
         )
     except WorkflowNotFoundError:
         raise HTTPException(status_code=404, detail="Workflow not found")

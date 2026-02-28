@@ -14,6 +14,7 @@ from datetime import datetime, timezone
 
 from sqlalchemy.orm import Session
 from sqlalchemy import func
+from app.core.request_context import RequestContext
 from app.domain.workflow.models import Workflow, WorkflowStage
 from app.domain.application.models import Application
 
@@ -22,15 +23,25 @@ class WorkflowNotFoundError(Exception):
     pass
 
 
-def get_stage_summary(db: Session, workflow_id):
-    workflow = db.query(Workflow).filter(Workflow.id == workflow_id).first()
+def get_stage_summary(db: Session, ctx: RequestContext, workflow_id):
+    workflow = (
+        db.query(Workflow)
+        .filter(
+            Workflow.id == workflow_id,
+            Workflow.organization_id == ctx.organization_id,
+        )
+        .first()
+    )
     if not workflow:
         raise WorkflowNotFoundError()
 
     # Get all stages for workflow
     stages = (
         db.query(WorkflowStage)
-        .filter(WorkflowStage.workflow_id == workflow_id)
+        .filter(
+            WorkflowStage.workflow_id == workflow_id,
+            WorkflowStage.organization_id == ctx.organization_id,
+        )
         .order_by(WorkflowStage.order)
         .all()
     )
@@ -38,7 +49,10 @@ def get_stage_summary(db: Session, workflow_id):
     # Count applications per stage (workflow-scoped)
     counts = (
         db.query(Application.stage, func.count(Application.id))
-        .filter(Application.workflow_id == workflow_id)
+        .filter(
+            Application.workflow_id == workflow_id,
+            Application.organization_id == ctx.organization_id,
+        )
         .group_by(Application.stage)
         .all()
     )
@@ -55,8 +69,20 @@ def get_stage_summary(db: Session, workflow_id):
     }
 
 
-def get_stage_duration_summary(db: Session, workflow_id, now: datetime | None = None):
-    workflow = db.query(Workflow).filter(Workflow.id == workflow_id).first()
+def get_stage_duration_summary(
+    db: Session,
+    ctx: RequestContext,
+    workflow_id,
+    now: datetime | None = None,
+):
+    workflow = (
+        db.query(Workflow)
+        .filter(
+            Workflow.id == workflow_id,
+            Workflow.organization_id == ctx.organization_id,
+        )
+        .first()
+    )
     if not workflow:
         raise WorkflowNotFoundError()
 
@@ -70,7 +96,10 @@ def get_stage_duration_summary(db: Session, workflow_id, now: datetime | None = 
 
     stages_for_workflow = (
         db.query(WorkflowStage)
-        .filter(WorkflowStage.workflow_id == workflow_id)
+        .filter(
+            WorkflowStage.workflow_id == workflow_id,
+            WorkflowStage.organization_id == ctx.organization_id,
+        )
         .order_by(WorkflowStage.order)
         .all()
     )
@@ -78,7 +107,12 @@ def get_stage_duration_summary(db: Session, workflow_id, now: datetime | None = 
     workflow_stage_names = {stage.name for stage in stages_for_workflow}
 
     applications = (
-        db.query(Application).filter(Application.workflow_id == workflow_id).all()
+        db.query(Application)
+        .filter(
+            Application.workflow_id == workflow_id,
+            Application.organization_id == ctx.organization_id,
+        )
+        .all()
     )
 
     stage_data: dict[str, dict[str, float | int]] = {}

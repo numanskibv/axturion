@@ -52,6 +52,12 @@ docker compose up -d --build
 
 Run tests:
 
+Local (venv):
+
+PYTHONPATH=backend ./.venv/bin/python -m pytest -q
+
+Container (example):
+
 docker exec -it deploy-backend-1 sh -lc 'PYTHONPATH=/app pytest -q /tests'
 
 Swagger UI:
@@ -60,16 +66,34 @@ http://localhost:8000/docs
 
 ---
 
+## Authorization & Tenancy
+
+MATS is organization-scoped. API requests are authorized via organization membership roles mapped to exact-match scopes.
+
+System tests and local calls typically pass:
+
+- X-Org-Id: organization UUID
+- X-User-Id: user UUID
+
+Selected governance endpoints:
+
+- GET /audit/verify (scope: audit:read)
+- GET /compliance/export (scope: compliance:export)
+- GET /approvals/pending (scope: reporting:read)
+- GET /reporting/approvals/summary (scope: reporting:read)
+
+---
+
 ## Documentation
 
 - Architecture → ARCHITECTURE.md
 - Engineering Guardrails → ENGINEERING_GUIDELINES.md
 - Governance Model → GOVERNANCE.md
-- Roadmap → ROADMAP.md
+- Governance Blueprint → docs/GOVERNANCE_BLUEPRINT.md
+- Technical Roadmap → TECNICAL_ROADMAP.md
 - Changelog → CHANGELOG.md
-- Contribution Guidelines → CONTRIBUTING.md
 - Security Policy → SECURITY.md
-- Enterprise Layer → ENTERPRISE.md
+- Enterprise Layer → docs/ENTERPRICE.md
 
 ---
 

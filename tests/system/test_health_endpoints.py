@@ -17,6 +17,7 @@ def client(db, monkeypatch):
     # triggers FastAPI lifespan events.
     from app.main import app
     import app.core.db as core_db
+    from app.core.config import Settings
 
     engine = db.get_bind()
     TestingSessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False)
@@ -29,14 +30,22 @@ def client(db, monkeypatch):
             session.close()
 
     # Ensure startup doesn't try to talk to Postgres or seed workflow tables.
-    monkeypatch.setattr("app.main.wait_for_db", lambda: None)
-    monkeypatch.setattr("app.main.ensure_activity_payload_column", lambda: None)
+    monkeypatch.setattr("app.main.core_db.wait_for_db", lambda: None)
+    monkeypatch.setattr("app.main.core_db.init_db", lambda _settings: None)
+    monkeypatch.setattr("app.main.verify_startup", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr("app.main.seed_identity", lambda _db: None)
     monkeypatch.setattr("app.main.seed_workflow", lambda _db: None)
     monkeypatch.setattr("app.main.seed_automation", lambda _db: None)
 
+    # Ensure settings load doesn't require env in tests.
+    monkeypatch.setattr(
+        "app.main.get_settings",
+        lambda: Settings(DATABASE_URL=str(engine.url), ENV="test", LOG_LEVEL="INFO"),
+    )
+
     # Patch SessionLocal used by lifespan to use sqlite.
-    monkeypatch.setattr("app.main.SessionLocal", TestingSessionLocal)
     monkeypatch.setattr(core_db, "SessionLocal", TestingSessionLocal)
+    monkeypatch.setattr("app.main.core_db", core_db)
 
     # Override FastAPI dependency for DB sessions.
     app.dependency_overrides[core_db.get_db] = override_get_db
@@ -51,6 +60,11 @@ def test_live_returns_alive(client: TestClient):
     resp = client.get("/live")
     assert resp.status_code == 200
     assert resp.json() == {"status": "alive"}
+
+    assert "x-correlation-id" in {k.lower() for k in resp.headers.keys()}
+    import uuid
+
+    uuid.UUID(resp.headers["X-Correlation-Id"])
 
 
 def test_ready_returns_keys(client: TestClient):

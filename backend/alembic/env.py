@@ -19,6 +19,7 @@ from app.domain.automation.models import AutomationRule, Activity
 from app.domain.audit.models import AuditLog
 from app.domain.job.models import Job
 from app.domain.candidate.models import Candidate
+from app.domain.organization.models import Organization
 
 # Alembic Config object (alembic.ini)
 config = context.config

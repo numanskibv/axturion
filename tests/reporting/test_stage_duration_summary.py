@@ -5,17 +5,27 @@ from app.domain.workflow.models import Workflow, WorkflowStage
 from app.domain.application.models import Application
 
 
-def test_stage_duration_summary_is_workflow_scoped_and_calculates_average(db):
+def test_stage_duration_summary_is_workflow_scoped_and_calculates_average(db, org, ctx):
     # Create workflow A
-    workflow_a = Workflow(name="Workflow A")
+    workflow_a = Workflow(name="Workflow A", organization_id=org.id)
     db.add(workflow_a)
     db.commit()
     db.refresh(workflow_a)
 
     db.add_all(
         [
-            WorkflowStage(workflow_id=workflow_a.id, name="applied", order=1),
-            WorkflowStage(workflow_id=workflow_a.id, name="screening", order=2),
+            WorkflowStage(
+                organization_id=org.id,
+                workflow_id=workflow_a.id,
+                name="applied",
+                order=1,
+            ),
+            WorkflowStage(
+                organization_id=org.id,
+                workflow_id=workflow_a.id,
+                name="screening",
+                order=2,
+            ),
         ]
     )
     db.commit()
@@ -24,12 +34,14 @@ def test_stage_duration_summary_is_workflow_scoped_and_calculates_average(db):
 
     # Applications in workflow A
     app1 = Application(
+        organization_id=org.id,
         workflow_id=workflow_a.id,
         stage="applied",
         stage_entered_at=now - timedelta(days=4),
     )
 
     app2 = Application(
+        organization_id=org.id,
         workflow_id=workflow_a.id,
         stage="applied",
         stage_entered_at=now - timedelta(days=2),
@@ -39,16 +51,21 @@ def test_stage_duration_summary_is_workflow_scoped_and_calculates_average(db):
     db.commit()
 
     # Create workflow B (to test isolation)
-    workflow_b = Workflow(name="Workflow B")
+    workflow_b = Workflow(name="Workflow B", organization_id=org.id)
     db.add(workflow_b)
     db.commit()
     db.refresh(workflow_b)
 
-    db.add(WorkflowStage(workflow_id=workflow_b.id, name="applied", order=1))
+    db.add(
+        WorkflowStage(
+            organization_id=org.id, workflow_id=workflow_b.id, name="applied", order=1
+        )
+    )
     db.commit()
 
     db.add(
         Application(
+            organization_id=org.id,
             workflow_id=workflow_b.id,
             stage="applied",
             stage_entered_at=now - timedelta(days=10),
@@ -57,7 +74,7 @@ def test_stage_duration_summary_is_workflow_scoped_and_calculates_average(db):
     db.commit()
 
     # Act
-    result = get_stage_duration_summary(db, workflow_a.id, now=now)
+    result = get_stage_duration_summary(db, ctx, workflow_a.id, now=now)
 
     stages = {s["stage"]: s for s in result["stages"]}
 

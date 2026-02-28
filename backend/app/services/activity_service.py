@@ -8,13 +8,19 @@ Activities are immutable records used to show what happened to an entity
 
 import json
 from typing import Any, Dict, Optional
+from uuid import UUID
 
 from sqlalchemy.orm import Session
 from app.domain.automation.models import Activity
 
+import logging
+
+logger = logging.getLogger(__name__)
+
 
 def create_activity(
     db: Session,
+    organization_id: UUID,
     entity_type: str,
     entity_id: str,
     activity_type: str,
@@ -35,11 +41,23 @@ def create_activity(
         message = ""
 
     activity = Activity(
+        organization_id=organization_id,
         entity_type=entity_type,
         entity_id=entity_id,
         type=activity_type,
         message=message,
         payload=payload,
+    )
+
+    logger.info(
+        "activity_created",
+        extra={
+            "action": "activity_created",
+            "organization_id": str(organization_id),
+            "entity_type": entity_type,
+            "entity_id": entity_id,
+            "activity_type": activity_type,
+        },
     )
     db.add(activity)
     db.flush()

@@ -1,5 +1,5 @@
 import uuid
-from sqlalchemy import JSON, Column, DateTime, String, Text
+from sqlalchemy import JSON, Column, DateTime, String, Text, ForeignKey
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.sql import func
 from app.core.db import Base
@@ -8,6 +8,11 @@ from app.core.db import Base
 class AutomationRule(Base):
     __tablename__ = "automation_rule"
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    organization_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("organization.id"),
+        nullable=False,
+    )
     name = Column(String, nullable=False)
     event_type = Column(String, nullable=False)
     enabled = Column(String, nullable=False, default="true")
@@ -20,6 +25,11 @@ class AutomationRule(Base):
 class Activity(Base):
     __tablename__ = "activity"
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    organization_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("organization.id"),
+        nullable=False,
+    )
     entity_type = Column(String, nullable=False)
     entity_id = Column(String, nullable=False)
     type = Column(String, nullable=False)

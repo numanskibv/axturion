@@ -1,22 +1,46 @@
 import os
 import time
-from sqlalchemy import create_engine, inspect, text
+from typing import Any
+
+from sqlalchemy import create_engine, text
 from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import sessionmaker, declarative_base
 
-DATABASE_URL = os.getenv("DATABASE_URL")
+from app.core.config import Settings
 
-SQLALCHEMY_ECHO = os.getenv("SQLALCHEMY_ECHO", "false").lower() in {
-    "1",
-    "true",
-    "yes",
-    "y",
-}
-
-engine = create_engine(DATABASE_URL, echo=SQLALCHEMY_ECHO)
-SessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False)
+engine = None
+SessionLocal = None
 
 Base = declarative_base()
+
+
+def init_db(settings: Settings, *, echo: bool | None = None) -> None:
+    """Initialize SQLAlchemy engine + Session factory.
+
+    This is intentionally lazy: importing modules must not require env vars.
+    """
+
+    global engine, SessionLocal
+
+    if echo is None:
+        effective_echo = os.getenv("SQLALCHEMY_ECHO", "false").lower() in {
+            "1",
+            "true",
+            "yes",
+            "y",
+        }
+    else:
+        effective_echo = echo
+    engine = create_engine(settings.database_url, echo=effective_echo)
+    SessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False)
+
+
+def _require_initialized() -> tuple[Any, Any]:
+    if engine is None or SessionLocal is None:
+        raise RuntimeError(
+            "Database is not initialized; call init_db(settings) on startup"
+        )
+    return engine, SessionLocal
 
 
 def wait_for_db(max_attempts: int = 30, delay_seconds: float = 1.0) -> None:
@@ -26,11 +50,13 @@ def wait_for_db(max_attempts: int = 30, delay_seconds: float = 1.0) -> None:
     booting (common in Docker Compose).
     """
 
+    current_engine, _ = _require_initialized()
+
     last_error: Exception | None = None
 
     for attempt in range(1, max_attempts + 1):
         try:
-            with engine.connect() as conn:
+            with current_engine.connect() as conn:
                 conn.execute(text("SELECT 1"))
             return
         except OperationalError as exc:
@@ -43,34 +69,10 @@ def wait_for_db(max_attempts: int = 30, delay_seconds: float = 1.0) -> None:
         raise last_error
 
 
-def ensure_activity_payload_column() -> None:
-    """Best-effort dev-time schema sync.
-
-    SQLAlchemy `create_all()` won't add new columns to existing tables.
-    This keeps local/docker environments working when we add columns like
-    `activity.payload` without requiring an immediate migration.
-    """
-
-    try:
-        inspector = inspect(engine)
-        if "activity" not in inspector.get_table_names():
-            return
-
-        columns = {col["name"] for col in inspector.get_columns("activity")}
-        if "payload" in columns:
-            return
-
-        with engine.begin() as conn:
-            conn.execute(
-                text("ALTER TABLE activity ADD COLUMN IF NOT EXISTS payload JSON")
-            )
-    except Exception:
-        # Don't block app startup in dev if schema sync fails.
-        return
-
-
 def get_db():
-    db = SessionLocal()
+    _, current_session_local = _require_initialized()
+
+    db = current_session_local()
     try:
         yield db
     finally:

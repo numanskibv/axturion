@@ -1,8 +1,13 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
+from app.api.deps import get_request_context
+from app.core.request_context import RequestContext
 from app.core.db import get_db
-from app.services.workflow_query_service import get_allowed_transitions
+from app.services.workflow_query_service import (
+    get_allowed_transitions,
+    OrganizationAccessError,
+)
 
 router = APIRouter(tags=["workflow-queries"])
 
@@ -19,9 +24,15 @@ Results are strictly scoped to the application's workflow.
 This endpoint supports UI decision logic and validation transparency.
 """,
 )
-def allowed_transitions(application_id: str, db: Session = Depends(get_db)):
+def allowed_transitions(
+    application_id: str,
+    ctx: RequestContext = Depends(get_request_context),
+    db: Session = Depends(get_db),
+):
     """List allowed target stages for an application from its current stage."""
     try:
-        return get_allowed_transitions(db, application_id)
+        return get_allowed_transitions(db, ctx, application_id)
+    except OrganizationAccessError as e:
+        raise HTTPException(status_code=403, detail=str(e))
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))

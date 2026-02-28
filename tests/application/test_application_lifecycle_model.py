@@ -16,13 +16,14 @@ from app.services.application_service import (
 from app.workflow.service import move_application_stage
 
 
-def test_application_initial_lifecycle_fields(db):
-    workflow = Workflow(name="Workflow")
+def test_application_initial_lifecycle_fields(db, org):
+    workflow = Workflow(name="Workflow", organization_id=org.id)
     db.add(workflow)
     db.commit()
     db.refresh(workflow)
 
     application = Application(
+        organization_id=org.id,
         workflow_id=workflow.id,
         stage="applied",
     )
@@ -37,21 +38,29 @@ def test_application_initial_lifecycle_fields(db):
     assert isinstance(application.stage_entered_at, datetime)
 
 
-def test_stage_change_resets_stage_entered_at(db):
-    workflow = Workflow(name="Workflow")
+def test_stage_change_resets_stage_entered_at(db, org, ctx):
+    workflow = Workflow(name="Workflow", organization_id=org.id)
     db.add(workflow)
     db.commit()
     db.refresh(workflow)
 
     db.add_all(
         [
-            WorkflowStage(workflow_id=workflow.id, name="applied", order=1),
-            WorkflowStage(workflow_id=workflow.id, name="screening", order=2),
+            WorkflowStage(
+                organization_id=org.id, workflow_id=workflow.id, name="applied", order=1
+            ),
+            WorkflowStage(
+                organization_id=org.id,
+                workflow_id=workflow.id,
+                name="screening",
+                order=2,
+            ),
         ]
     )
 
     db.add(
         WorkflowTransition(
+            organization_id=org.id,
             workflow_id=workflow.id,
             from_stage="applied",
             to_stage="screening",
@@ -60,6 +69,7 @@ def test_stage_change_resets_stage_entered_at(db):
     db.commit()
 
     application = Application(
+        organization_id=org.id,
         workflow_id=workflow.id,
         stage="applied",
     )
@@ -72,7 +82,7 @@ def test_stage_change_resets_stage_entered_at(db):
 
     time.sleep(0.01)  # ensure measurable time diff
 
-    move_application_stage(db, application.id, "screening")
+    move_application_stage(db, ctx, application.id, "screening")
 
     db.refresh(application)
 
@@ -81,13 +91,14 @@ def test_stage_change_resets_stage_entered_at(db):
     assert application.status == "active"
 
 
-def test_close_application_sets_closed_fields(db):
-    workflow = Workflow(name="Workflow")
+def test_close_application_sets_closed_fields(db, org, ctx):
+    workflow = Workflow(name="Workflow", organization_id=org.id)
     db.add(workflow)
     db.commit()
     db.refresh(workflow)
 
     application = Application(
+        organization_id=org.id,
         workflow_id=workflow.id,
         stage="applied",
     )
@@ -96,7 +107,7 @@ def test_close_application_sets_closed_fields(db):
     db.commit()
     db.refresh(application)
 
-    close_application(db, application.id)
+    close_application(db, ctx, application.id)
 
     db.refresh(application)
 
@@ -104,21 +115,29 @@ def test_close_application_sets_closed_fields(db):
     assert application.closed_at is not None
 
 
-def test_closed_application_cannot_change_stage(db):
-    workflow = Workflow(name="Workflow")
+def test_closed_application_cannot_change_stage(db, org, ctx):
+    workflow = Workflow(name="Workflow", organization_id=org.id)
     db.add(workflow)
     db.commit()
     db.refresh(workflow)
 
     db.add_all(
         [
-            WorkflowStage(workflow_id=workflow.id, name="applied", order=1),
-            WorkflowStage(workflow_id=workflow.id, name="screening", order=2),
+            WorkflowStage(
+                organization_id=org.id, workflow_id=workflow.id, name="applied", order=1
+            ),
+            WorkflowStage(
+                organization_id=org.id,
+                workflow_id=workflow.id,
+                name="screening",
+                order=2,
+            ),
         ]
     )
 
     db.add(
         WorkflowTransition(
+            organization_id=org.id,
             workflow_id=workflow.id,
             from_stage="applied",
             to_stage="screening",
@@ -127,6 +146,7 @@ def test_closed_application_cannot_change_stage(db):
     db.commit()
 
     application = Application(
+        organization_id=org.id,
         workflow_id=workflow.id,
         stage="applied",
     )
@@ -135,7 +155,7 @@ def test_closed_application_cannot_change_stage(db):
     db.commit()
     db.refresh(application)
 
-    close_application(db, application.id)
+    close_application(db, ctx, application.id)
 
     with pytest.raises(ApplicationAlreadyClosedError):
-        move_application_stage(db, application.id, "screening")
+        move_application_stage(db, ctx, application.id, "screening")

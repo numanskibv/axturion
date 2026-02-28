@@ -168,6 +168,21 @@ This establishes the foundation for:
 
 ## [Unreleased]
 
+### Added
+
+- Organization-scoped Candidate endpoints (CRUD-lite) with scope-based RBAC
+- Optional 4-eyes approval for stage transitions (`requires_approval` + pending transitions)
+- Approvals dashboard endpoints (`/approvals/*`) and approvals summary reporting (`/reporting/approvals/summary`)
+- Tamper-evident audit hash chaining (`seq`, `prev_hash`, `hash`) and verification endpoint (`/audit/verify`)
+- Compliance export bundle endpoint (`/compliance/export`) producing an org-scoped ZIP (audit + approvals + lifecycle)
+
+### Improved
+
+- Activity listing endpoints now support safe pagination (`limit`/`offset`, default 50, hard cap 500)
+- Compliance export memory usage reduced (single audit row materialization, compact JSON in ZIP, truncation safety cap)
+- Audit verification hardened: API-style calls cannot request full-chain verification via `limit=None`
+- Approvals summary optimized to use DB aggregation (avoids full materialization)
+
 ### Planned
 
 - Workflow editor mutation refinements

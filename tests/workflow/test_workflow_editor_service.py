@@ -4,23 +4,26 @@ from app.domain.workflow.models import Workflow, WorkflowStage, WorkflowTransiti
 # Test that get_workflow_definition returns the correct stages and transitions for a workflow
 # This is a service-level test that directly tests the service function without going through the API layer.
 # It uses the real database (not mocks) to ensure that the SQLAlchemy queries work as expected.
-# The test sets up a workflow with two stages and one transition, 
+# The test sets up a workflow with two stages and one transition,
 # then calls the service function and checks that the returned data matches what was set up.
 
-def test_get_workflow_definition_returns_stages_and_transitions(db):
+
+def test_get_workflow_definition_returns_stages_and_transitions(db, org, ctx):
     # Arrange: workflow
-    workflow = Workflow(name="Test Workflow")
+    workflow = Workflow(name="Test Workflow", organization_id=org.id)
     db.add(workflow)
     db.commit()
     db.refresh(workflow)
 
     # Arrange: stages (intentionally out of order)
     stage_applied = WorkflowStage(
+        organization_id=org.id,
         workflow_id=workflow.id,
         name="applied",
         order=2,
     )
     stage_screening = WorkflowStage(
+        organization_id=org.id,
         workflow_id=workflow.id,
         name="screening",
         order=1,
@@ -29,6 +32,7 @@ def test_get_workflow_definition_returns_stages_and_transitions(db):
 
     # Arrange: transition
     transition = WorkflowTransition(
+        organization_id=org.id,
         workflow_id=workflow.id,
         from_stage="applied",
         to_stage="screening",
@@ -38,7 +42,7 @@ def test_get_workflow_definition_returns_stages_and_transitions(db):
     db.commit()
 
     # Act
-    result = get_workflow_definition(db, str(workflow.id))
+    result = get_workflow_definition(db, ctx, str(workflow.id))
 
     # Assert: workflow basics
     assert result["id"] == str(workflow.id)

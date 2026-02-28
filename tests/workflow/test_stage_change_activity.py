@@ -8,21 +8,23 @@ from app.domain.workflow.models import Workflow
 ##  This test verifies that when an application stage is changed, an Activity record is created to log this event.
 
 
-def test_stage_change_creates_activity(db):
+def test_stage_change_creates_activity(db, org, ctx):
     # Arrange: create workflow
-    workflow = Workflow(name="Test Workflow")
+    workflow = Workflow(name="Test Workflow", organization_id=org.id)
     db.add(workflow)
     db.commit()
     db.refresh(workflow)
 
     # Arrange: application + workflow transition
     application = Application(
+        organization_id=org.id,
         workflow_id=workflow.id,
         stage="applied",
     )
     db.add(application)
 
     transition = WorkflowTransition(
+        organization_id=org.id,
         workflow_id=workflow.id,
         from_stage="applied",
         to_stage="screening",
@@ -32,7 +34,7 @@ def test_stage_change_creates_activity(db):
     db.commit()
 
     # Act: move stage
-    move_application_stage(db, application.id, "screening")
+    move_application_stage(db, ctx, application.id, "screening")
 
     # Assert: activity created
     activities = db.query(Activity).all()
@@ -43,21 +45,29 @@ def test_stage_change_creates_activity(db):
     assert activities[0].payload["to_stage"] == "screening"
 
 
-def test_stage_change_updates_stage_entered_at(db):
-    workflow = Workflow(name="Test Workflow")
+def test_stage_change_updates_stage_entered_at(db, org, ctx):
+    workflow = Workflow(name="Test Workflow", organization_id=org.id)
     db.add(workflow)
     db.commit()
     db.refresh(workflow)
 
     db.add_all(
         [
-            WorkflowStage(workflow_id=workflow.id, name="applied", order=1),
-            WorkflowStage(workflow_id=workflow.id, name="screening", order=2),
+            WorkflowStage(
+                organization_id=org.id, workflow_id=workflow.id, name="applied", order=1
+            ),
+            WorkflowStage(
+                organization_id=org.id,
+                workflow_id=workflow.id,
+                name="screening",
+                order=2,
+            ),
         ]
     )
 
     db.add(
         WorkflowTransition(
+            organization_id=org.id,
             workflow_id=workflow.id,
             from_stage="applied",
             to_stage="screening",
@@ -67,6 +77,7 @@ def test_stage_change_updates_stage_entered_at(db):
     db.commit()
 
     application = Application(
+        organization_id=org.id,
         workflow_id=workflow.id,
         stage="applied",
     )
@@ -76,7 +87,7 @@ def test_stage_change_updates_stage_entered_at(db):
 
     original_timestamp = application.stage_entered_at
 
-    move_application_stage(db, application.id, "screening")
+    move_application_stage(db, ctx, application.id, "screening")
     db.refresh(application)
 
     assert application.stage == "screening"

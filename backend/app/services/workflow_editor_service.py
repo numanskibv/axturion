@@ -17,12 +17,18 @@ from uuid import UUID
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 
+from app.core.request_context import RequestContext
+
 
 from app.domain.workflow.models import (
     Workflow,
     WorkflowStage,
     WorkflowTransition,
 )
+
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 def _coerce_uuid(value: str | UUID) -> UUID:
@@ -35,7 +41,11 @@ def _coerce_uuid(value: str | UUID) -> UUID:
         raise ValueError("Invalid workflow_id") from exc
 
 
-def get_workflow_definition(db: Session, workflow_id: str):
+class OrganizationAccessError(Exception):
+    pass
+
+
+def get_workflow_definition(db: Session, ctx: RequestContext, workflow_id: str):
     """
     Return the full workflow definition including:
     - ordered stages
@@ -51,16 +61,25 @@ def get_workflow_definition(db: Session, workflow_id: str):
     if not workflow:
         raise ValueError("Workflow not found")
 
+    if workflow.organization_id != ctx.organization_id:
+        raise OrganizationAccessError("Cross-organization access is forbidden")
+
     stages = (
         db.query(WorkflowStage)
-        .filter(WorkflowStage.workflow_id == workflow_uuid)
+        .filter(
+            WorkflowStage.workflow_id == workflow_uuid,
+            WorkflowStage.organization_id == ctx.organization_id,
+        )
         .order_by(WorkflowStage.order)
         .all()
     )
 
     transitions = (
         db.query(WorkflowTransition)
-        .filter(WorkflowTransition.workflow_id == workflow_uuid)
+        .filter(
+            WorkflowTransition.workflow_id == workflow_uuid,
+            WorkflowTransition.organization_id == ctx.organization_id,
+        )
         .all()
     )
 
@@ -115,6 +134,7 @@ class TransitionNotFoundError(Exception):
 
 def add_workflow_transition(
     db: Session,
+    ctx: RequestContext,
     workflow_id: str | UUID,
     from_stage: str,
     to_stage: str,
@@ -130,10 +150,13 @@ def add_workflow_transition(
     workflow = db.query(Workflow).filter(Workflow.id == workflow_uuid).first()
     if not workflow:
         raise WorkflowNotFoundError()
+    if workflow.organization_id != ctx.organization_id:
+        raise OrganizationAccessError()
 
     from_exists = (
         db.query(WorkflowStage.id)
         .filter(
+            WorkflowStage.organization_id == ctx.organization_id,
             WorkflowStage.workflow_id == workflow_uuid,
             WorkflowStage.name == from_stage,
         )
@@ -145,6 +168,7 @@ def add_workflow_transition(
     to_exists = (
         db.query(WorkflowStage.id)
         .filter(
+            WorkflowStage.organization_id == ctx.organization_id,
             WorkflowStage.workflow_id == workflow_uuid,
             WorkflowStage.name == to_stage,
         )
@@ -156,6 +180,7 @@ def add_workflow_transition(
     existing = (
         db.query(WorkflowTransition.id)
         .filter(
+            WorkflowTransition.organization_id == ctx.organization_id,
             WorkflowTransition.workflow_id == workflow_uuid,
             WorkflowTransition.from_stage == from_stage,
             WorkflowTransition.to_stage == to_stage,
@@ -166,9 +191,22 @@ def add_workflow_transition(
         raise DuplicateTransitionError()
 
     transition = WorkflowTransition(
+        organization_id=ctx.organization_id,
         workflow_id=workflow_uuid,
         from_stage=from_stage,
         to_stage=to_stage,
+    )
+
+    logger.info(
+        "workflow_transition_added",
+        extra={
+            "action": "workflow_transition_added",
+            "organization_id": str(ctx.organization_id),
+            "actor_id": str(ctx.actor_id),
+            "workflow_id": str(workflow_uuid),
+            "from_stage": from_stage,
+            "to_stage": to_stage,
+        },
     )
 
     db.add(transition)
@@ -180,6 +218,7 @@ def add_workflow_transition(
 
 def remove_workflow_transition(
     db: Session,
+    ctx: RequestContext,
     workflow_id: str | UUID,
     from_stage: str,
     to_stage: str,
@@ -192,10 +231,13 @@ def remove_workflow_transition(
     workflow = db.query(Workflow).filter(Workflow.id == workflow_uuid).first()
     if not workflow:
         raise WorkflowNotFoundError()
+    if workflow.organization_id != ctx.organization_id:
+        raise OrganizationAccessError()
 
     transition = (
         db.query(WorkflowTransition)
         .filter(
+            WorkflowTransition.organization_id == ctx.organization_id,
             WorkflowTransition.workflow_id == workflow_uuid,
             WorkflowTransition.from_stage == from_stage,
             WorkflowTransition.to_stage == to_stage,
@@ -206,6 +248,18 @@ def remove_workflow_transition(
         raise TransitionNotFoundError()
 
     db.delete(transition)
+
+    logger.info(
+        "workflow_transition_removed",
+        extra={
+            "action": "workflow_transition_removed",
+            "organization_id": str(ctx.organization_id),
+            "actor_id": str(ctx.actor_id),
+            "workflow_id": str(workflow_uuid),
+            "from_stage": from_stage,
+            "to_stage": to_stage,
+        },
+    )
     db.commit()
 
     return None
@@ -213,6 +267,7 @@ def remove_workflow_transition(
 
 def remove_workflow_stage(
     db: Session,
+    ctx: RequestContext,
     workflow_id: str | UUID,
     stage_name: str,
 ):
@@ -224,10 +279,13 @@ def remove_workflow_stage(
     workflow = db.query(Workflow).filter(Workflow.id == workflow_uuid).first()
     if not workflow:
         raise WorkflowNotFoundError()
+    if workflow.organization_id != ctx.organization_id:
+        raise OrganizationAccessError()
 
     stage = (
         db.query(WorkflowStage)
         .filter(
+            WorkflowStage.organization_id == ctx.organization_id,
             WorkflowStage.workflow_id == workflow_uuid,
             WorkflowStage.name == stage_name,
         )
@@ -241,6 +299,7 @@ def remove_workflow_stage(
     transition_in_use = (
         db.query(WorkflowTransition.id)
         .filter(
+            WorkflowTransition.organization_id == ctx.organization_id,
             WorkflowTransition.workflow_id == workflow_uuid,
             or_(
                 WorkflowTransition.from_stage == stage_name,
@@ -257,6 +316,7 @@ def remove_workflow_stage(
     app_in_use = (
         db.query(Application.id)
         .filter(
+            Application.organization_id == ctx.organization_id,
             Application.workflow_id == workflow_uuid,
             Application.stage == stage_name,
         )
@@ -267,9 +327,23 @@ def remove_workflow_stage(
 
     db.delete(stage)
 
+    logger.info(
+        "workflow_stage_removed",
+        extra={
+            "action": "workflow_stage_removed",
+            "organization_id": str(ctx.organization_id),
+            "actor_id": str(ctx.actor_id),
+            "workflow_id": str(workflow_uuid),
+            "stage": stage_name,
+        },
+    )
+
     remaining_stages = (
         db.query(WorkflowStage)
-        .filter(WorkflowStage.workflow_id == workflow_uuid)
+        .filter(
+            WorkflowStage.workflow_id == workflow_uuid,
+            WorkflowStage.organization_id == ctx.organization_id,
+        )
         .order_by(
             WorkflowStage.order.is_(None),
             WorkflowStage.order,
@@ -289,6 +363,7 @@ def remove_workflow_stage(
 
 def add_workflow_stage(
     db: Session,
+    ctx: RequestContext,
     workflow_id: str | UUID,
     name: str,
     order: int | None = None,
@@ -309,11 +384,14 @@ def add_workflow_stage(
     workflow = db.query(Workflow).filter(Workflow.id == workflow_uuid).first()
     if not workflow:
         raise WorkflowNotFoundError()
+    if workflow.organization_id != ctx.organization_id:
+        raise OrganizationAccessError()
 
     # Enforce unique stage name per workflow
     existing = (
         db.query(WorkflowStage)
         .filter(
+            WorkflowStage.organization_id == ctx.organization_id,
             WorkflowStage.workflow_id == workflow_uuid,
             WorkflowStage.name == name,
         )
@@ -325,15 +403,31 @@ def add_workflow_stage(
     if order is None:
         max_order = (
             db.query(func.max(WorkflowStage.order))
-            .filter(WorkflowStage.workflow_id == workflow_uuid)
+            .filter(
+                WorkflowStage.workflow_id == workflow_uuid,
+                WorkflowStage.organization_id == ctx.organization_id,
+            )
             .scalar()
         )
         order = (max_order or 0) + 1
 
     stage = WorkflowStage(
+        organization_id=ctx.organization_id,
         workflow_id=workflow_uuid,
         name=name,
         order=order,
+    )
+
+    logger.info(
+        "workflow_stage_added",
+        extra={
+            "action": "workflow_stage_added",
+            "organization_id": str(ctx.organization_id),
+            "actor_id": str(ctx.actor_id),
+            "workflow_id": str(workflow_uuid),
+            "stage": name,
+            "order": order,
+        },
     )
 
     db.add(stage)

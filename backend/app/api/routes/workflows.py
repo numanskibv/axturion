@@ -1,8 +1,13 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
+from app.api.deps import get_request_context
+from app.core.request_context import RequestContext
 from app.core.db import get_db
-from app.services.workflow_editor_service import get_workflow_definition
+from app.services.workflow_editor_service import (
+    get_workflow_definition,
+    OrganizationAccessError,
+)
 
 router = APIRouter(tags=["workflows"])
 
@@ -20,10 +25,16 @@ Returns: A structured workflow definition suitable for administrative review and
 Errors: Returns not-found when the workflow identifier is unknown.
 """,
 )
-def get_workflow(workflow_id: str, db: Session = Depends(get_db)):
+def get_workflow(
+    workflow_id: str,
+    ctx: RequestContext = Depends(get_request_context),
+    db: Session = Depends(get_db),
+):
     """Retrieve a workflow definition by identifier."""
     try:
-        return get_workflow_definition(db, workflow_id)
+        return get_workflow_definition(db, ctx, workflow_id)
+    except OrganizationAccessError as e:
+        raise HTTPException(status_code=403, detail=str(e))
     except ValueError as e:
         # Service-level error → nette API response
         raise HTTPException(status_code=404, detail=str(e))
