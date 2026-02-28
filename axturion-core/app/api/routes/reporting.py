@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
+from uuid import UUID
 from app.core.db import get_db
 from app.api.deps import get_request_context, require_scope
 from app.core.scopes import REPORTING_READ
@@ -11,9 +12,21 @@ from app.services.reporting_service import (
     get_stage_duration_summary,
     get_stage_summary,
 )
+from app.services.lifecycle_reporting_service import (
+    list_stage_aging,
+    stage_duration_summary,
+    time_to_close_stats,
+    WorkflowNotFoundError as LifecycleWorkflowNotFoundError,
+)
 from app.api.schemas.reporting import (
     WorkflowStageSummaryResponse,
     WorkflowStageDurationResponse,
+)
+from app.api.schemas.reporting_lifecycle import (
+    StageAgingItem,
+    StageDurationSummaryItem,
+    TimeToCloseResult,
+    TimeToCloseStatsResponse,
 )
 
 router = APIRouter(prefix="/reporting", tags=["reporting"])
@@ -84,3 +97,65 @@ def approvals_summary(
     db: Session = Depends(get_db),
 ):
     return approval_summary(db, ctx)
+
+
+@router.get(
+    "/stage-aging",
+    summary="Open applications stage aging",
+    description=(
+        "Lists open applications with their current stage and age in seconds since the last recorded stage change. "
+        "If no stage change audit exists, age is computed from the application creation timestamp. "
+        "Organization boundary: strictly org-scoped."
+    ),
+    response_model=list[StageAgingItem],
+)
+def reporting_stage_aging(
+    workflow_id: UUID | None = None,
+    limit: int = 50,
+    offset: int = 0,
+    _: None = Depends(require_scope(REPORTING_READ)),
+    ctx: RequestContext = Depends(get_request_context),
+    db: Session = Depends(get_db),
+):
+    return list_stage_aging(db, ctx, workflow_id=workflow_id, limit=limit, offset=offset)
+
+
+@router.get(
+    "/stage-duration-summary",
+    summary="Stage duration summary for closed applications",
+    description=(
+        "Computes average/median/p90 time spent per stage for closed applications in a workflow, "
+        "derived from ordered stage-change audit entries. "
+        "Organization boundary: strictly org-scoped."
+    ),
+    response_model=list[StageDurationSummaryItem],
+)
+def reporting_stage_duration_summary(
+    workflow_id: UUID,
+    _: None = Depends(require_scope(REPORTING_READ)),
+    ctx: RequestContext = Depends(get_request_context),
+    db: Session = Depends(get_db),
+):
+    try:
+        return stage_duration_summary(db, ctx, workflow_id=workflow_id)
+    except LifecycleWorkflowNotFoundError:
+        raise HTTPException(status_code=404, detail="Workflow not found")
+
+
+@router.get(
+    "/time-to-close",
+    summary="Time-to-close statistics",
+    description=(
+        "Computes time-to-close distribution stats for closed applications (closed_at - created_at). "
+        "Organization boundary: strictly org-scoped."
+    ),
+    response_model=TimeToCloseStatsResponse,
+)
+def reporting_time_to_close(
+    workflow_id: UUID | None = None,
+    result: TimeToCloseResult | None = None,
+    _: None = Depends(require_scope(REPORTING_READ)),
+    ctx: RequestContext = Depends(get_request_context),
+    db: Session = Depends(get_db),
+):
+    return time_to_close_stats(db, ctx, workflow_id=workflow_id, result=result)
