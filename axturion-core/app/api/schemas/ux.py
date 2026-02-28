@@ -33,6 +33,10 @@ class UXConfigResponse(BaseModel):
     config: UXModuleConfigSchema
 
 
+class UXRollbackPendingResponse(BaseModel):
+    approval_required: Literal[True] = True
+
+
 class UXConfigVersionItem(BaseModel):
     version: int
     audit_log_id: str

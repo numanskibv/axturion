@@ -1,8 +1,10 @@
+import uuid
 from uuid import uuid4
 from datetime import datetime, timezone
 
-from sqlalchemy import Column, String, DateTime, ForeignKey, UniqueConstraint, JSON
+from sqlalchemy import Column, String, DateTime, ForeignKey, UniqueConstraint, JSON, Integer
 from sqlalchemy.dialects.postgresql import UUID, JSONB
+from sqlalchemy.sql import func
 
 from app.core.db import Base
 
@@ -43,3 +45,30 @@ class UXConfig(Base):
         onupdate=_utcnow_naive,
         nullable=False,
     )
+
+
+class PendingUXRollback(Base):
+    __tablename__ = "pending_ux_rollback"
+
+    __table_args__ = (
+        UniqueConstraint(
+            "organization_id",
+            "module",
+            name="uq_pending_ux_rollback_org_module",
+        ),
+    )
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+
+    organization_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("organization.id"),
+        nullable=False,
+        index=True,
+    )
+
+    module = Column(String, nullable=False)
+    requested_by = Column(UUID(as_uuid=True), nullable=False)
+    version = Column(Integer, nullable=False)
+
+    created_at = Column(DateTime(timezone=True), nullable=False, server_default=func.now())

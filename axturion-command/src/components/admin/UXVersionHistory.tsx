@@ -5,6 +5,7 @@ import type { ReactNode } from "react";
 
 import { useUXRollback } from "@/hooks/useUXRollback";
 import { useUXVersions } from "@/hooks/useUXVersions";
+import { invalidateUXConfig } from "@/lib/uxConfigCache";
 
 type Props = {
     module: string;
@@ -40,6 +41,20 @@ export function UXVersionHistory({ module }: Props) {
             if (!ok) return;
 
             await rollback(version);
+
+            // Hard refresh any cached UXConfig for this module so higher-level
+            // consumers (e.g. layouts using `useUXConfig`) will re-fetch.
+            const orgId = window.localStorage.getItem("org_id")?.trim();
+            const userId = window.localStorage.getItem("user_id")?.trim();
+            if (orgId && userId) {
+                invalidateUXConfig(orgId, userId, normalizedModule);
+            }
+            window.dispatchEvent(
+                new CustomEvent("uxconfig:invalidate", {
+                    detail: { module: normalizedModule },
+                }),
+            );
+
             await refetch();
             setSuccessMessage(`Rolled back to version ${version}.`);
             window.setTimeout(() => setSuccessMessage(null), 2500);

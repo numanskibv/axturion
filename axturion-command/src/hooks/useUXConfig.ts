@@ -123,6 +123,27 @@ export function useUXConfig(module: string): UseUXConfigResult {
         };
     }, [normalizedModule]);
 
+    useEffect(() => {
+        if (typeof window === "undefined") return;
+
+        const handler = (event: Event) => {
+            if (!(event instanceof CustomEvent)) return;
+            const detail: unknown = event.detail;
+            if (!detail || typeof detail !== "object") return;
+            if (!("module" in detail)) return;
+            const moduleValue = (detail as { module?: unknown }).module;
+            if (typeof moduleValue !== "string") return;
+
+            // Only refetch if this hook instance is for the same module.
+            if (moduleValue.trim() !== normalizedModule) return;
+
+            void runFetch({ forceRefresh: true });
+        };
+
+        window.addEventListener("uxconfig:invalidate", handler);
+        return () => window.removeEventListener("uxconfig:invalidate", handler);
+    }, [normalizedModule, runFetch]);
+
     const refetch = useCallback(async () => {
         await runFetch({ forceRefresh: true });
     }, [runFetch]);

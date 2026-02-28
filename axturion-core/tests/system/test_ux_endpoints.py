@@ -3,7 +3,7 @@ from fastapi.testclient import TestClient
 from sqlalchemy.orm import sessionmaker
 
 from app.domain.audit.models import AuditLog  # noqa: F401 (register model)
-from app.domain.ux.models import UXConfig  # noqa: F401 (register model)
+from app.domain.ux.models import UXConfig, PendingUXRollback  # noqa: F401 (register model)
 
 
 @pytest.fixture
@@ -335,6 +335,124 @@ def test_rollback_invalid_version_returns_404(client: TestClient, db, org):
         json={"version": 999},
     )
     assert rollback.status_code == 404
+
+
+def test_ux_rollback_requires_second_approver_when_policy_enabled(client: TestClient, db, org):
+    hr_admin1 = _make_user(db, org, "hr_admin", "admin-ux-4eyes-1@local")
+    hr_admin2 = _make_user(db, org, "hr_admin", "admin-ux-4eyes-2@local")
+
+    policy = client.put(
+        "/governance/policy",
+        headers={
+            "X-Org-Id": str(org.id),
+            "X-User-Id": str(hr_admin1.id),
+        },
+        json={"require_4eyes_on_ux_rollback": True},
+    )
+    assert policy.status_code == 200
+    assert policy.json()["require_4eyes_on_ux_rollback"] is True
+
+    v1 = client.put(
+        "/ux/applications",
+        headers={
+            "X-Org-Id": str(org.id),
+            "X-User-Id": str(hr_admin1.id),
+        },
+        json={"layout": "compact", "theme": "light"},
+    )
+    assert v1.status_code == 200
+
+    v2 = client.put(
+        "/ux/applications",
+        headers={
+            "X-Org-Id": str(org.id),
+            "X-User-Id": str(hr_admin1.id),
+        },
+        json={"layout": "dense", "theme": "defense"},
+    )
+    assert v2.status_code == 200
+
+    first = client.post(
+        "/ux/applications/rollback",
+        headers={
+            "X-Org-Id": str(org.id),
+            "X-User-Id": str(hr_admin1.id),
+        },
+        json={"version": 1},
+    )
+    assert first.status_code == 202
+    assert first.json() == {"approval_required": True}
+
+    pending = (
+        db.query(PendingUXRollback)
+        .filter(
+            PendingUXRollback.organization_id == org.id,
+            PendingUXRollback.module == "applications",
+        )
+        .one_or_none()
+    )
+    assert pending is not None
+    assert int(pending.version) == 1
+    assert str(pending.requested_by) == str(hr_admin1.id)
+
+    pending_audit = (
+        db.query(AuditLog)
+        .filter(
+            AuditLog.organization_id == org.id,
+            AuditLog.entity_type == "ux_config",
+            AuditLog.action == "ux_rollback_pending",
+            AuditLog.entity_id == f"{org.id}:applications",
+        )
+        .order_by(AuditLog.seq.desc())
+        .first()
+    )
+    assert pending_audit is not None
+
+    same_user_second = client.post(
+        "/ux/applications/rollback",
+        headers={
+            "X-Org-Id": str(org.id),
+            "X-User-Id": str(hr_admin1.id),
+        },
+        json={"version": 1},
+    )
+    assert same_user_second.status_code == 403
+
+    approved = client.post(
+        "/ux/applications/rollback",
+        headers={
+            "X-Org-Id": str(org.id),
+            "X-User-Id": str(hr_admin2.id),
+        },
+        json={"version": 1},
+    )
+    assert approved.status_code == 200
+    body = approved.json()
+    assert body["config"]["layout"] == "compact"
+    assert body["config"]["theme"] == "light"
+
+    pending_after = (
+        db.query(PendingUXRollback)
+        .filter(
+            PendingUXRollback.organization_id == org.id,
+            PendingUXRollback.module == "applications",
+        )
+        .one_or_none()
+    )
+    assert pending_after is None
+
+    approved_audit = (
+        db.query(AuditLog)
+        .filter(
+            AuditLog.organization_id == org.id,
+            AuditLog.entity_type == "ux_config",
+            AuditLog.action == "ux_rollback_approved",
+            AuditLog.entity_id == f"{org.id}:applications",
+        )
+        .order_by(AuditLog.seq.desc())
+        .first()
+    )
+    assert approved_audit is not None
 
 
 def test_versions_include_diff_vs_previous(client: TestClient, db, org):

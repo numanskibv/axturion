@@ -19,6 +19,7 @@ from app.api.routes import (
     approvals,
     candidates,
     compliance,
+    governance,
     jobs,
     ux,
     workflows,
@@ -43,6 +44,8 @@ from app.domain.workflow.models import Workflow, WorkflowStage, WorkflowTransiti
 from app.domain.organization.models import Organization
 from app.domain.audit.models import AuditLog
 from app.domain.automation.models import AutomationRule, Activity
+from app.domain.ux.models import UXConfig, PendingUXRollback
+from app.domain.governance.models import PolicyConfig
 from app.core.logging_config import configure_logging
 
 import logging
@@ -131,6 +134,7 @@ app.include_router(approvals.router)
 app.include_router(audit.router)
 app.include_router(compliance.router)
 app.include_router(ux.router)
+app.include_router(governance.router)
 app.include_router(applications.router, prefix="/applications")
 app.include_router(activity.router, prefix="/activity")
 app.include_router(candidates.router, prefix="/candidates")

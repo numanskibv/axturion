@@ -2,19 +2,24 @@ from __future__ import annotations
 
 import json
 from typing import Any
+from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException
+from fastapi import Response
 from sqlalchemy.orm import Session
 
 from app.core.db import get_db
 from app.api.deps import get_request_context, require_scope
 from app.core.request_context import RequestContext
 from app.domain.audit.models import AuditLog
+from app.domain.ux.models import PendingUXRollback
+from app.services.policy_service import get_policy
 from app.services.ux_service import get_ux_config, upsert_ux_config
 from app.core.scopes import UX_READ, UX_WRITE
 from app.api.schemas.ux import (
     UXConfigResponse,
     UXConfigRollbackRequest,
+    UXRollbackPendingResponse,
     UXConfigDiff,
     UXFieldDiff,
     UXFlagChanged,
@@ -205,6 +210,8 @@ def fetch_ux_config(
 )
 def list_ux_config_versions(
     module: str,
+    limit: int = 50,
+    offset: int = 0,
     _: None = Depends(require_scope(UX_READ)),
     ctx: RequestContext = Depends(get_request_context),
     db: Session = Depends(get_db),
@@ -217,7 +224,10 @@ def list_ux_config_versions(
     current_snapshot = _snapshot_config(current.config) if current is not None else None
 
     entity_id = f"{ctx.organization_id}:{normalized_module}"
-    rows = (
+    limit = max(1, min(int(limit), 500))
+    offset = max(0, int(offset))
+
+    base_query = (
         db.query(AuditLog)
         .filter(
             AuditLog.organization_id == ctx.organization_id,
@@ -226,12 +236,21 @@ def list_ux_config_versions(
             AuditLog.entity_id == entity_id,
         )
         .order_by(AuditLog.seq.asc())
-        .all()
     )
+
+    rows = base_query.offset(offset).limit(limit).all()
+    if not rows:
+        return []
 
     items: list[UXConfigVersionItem] = []
     prev_snapshot: dict[str, Any] | None = None
-    for idx, row in enumerate(rows, start=1):
+    if offset > 0:
+        prev_row = base_query.offset(offset - 1).limit(1).first()
+        if prev_row is not None:
+            prev_payload = _audit_payload_to_dict(prev_row.payload)
+            prev_snapshot = _snapshot_config(prev_payload.get("config"))
+
+    for idx, row in enumerate(rows, start=offset + 1):
         payload = _audit_payload_to_dict(row.payload)
         raw_config = payload.get("config")
         snapshot = _snapshot_config(raw_config)
@@ -327,13 +346,14 @@ def put_ux_config(
 
 @router.post(
     "/{module}/rollback",
-    response_model=UXConfigResponse,
+    response_model=UXConfigResponse | UXRollbackPendingResponse,
     response_model_exclude_none=True,
     response_model_exclude_unset=True,
 )
 def rollback_ux_config(
     module: str,
     body: UXConfigRollbackRequest,
+    response: Response,
     _: None = Depends(require_scope(UX_WRITE)),
     ctx: RequestContext = Depends(get_request_context),
     db: Session = Depends(get_db),
@@ -343,6 +363,95 @@ def rollback_ux_config(
         raise HTTPException(status_code=422, detail="module is required")
 
     entity_id = f"{ctx.organization_id}:{normalized_module}"
+
+    policy = get_policy(db, ctx)
+    require_4eyes = bool(policy.require_4eyes_on_ux_rollback)
+
+    pending = (
+        db.query(PendingUXRollback)
+        .filter(
+            PendingUXRollback.organization_id == ctx.organization_id,
+            PendingUXRollback.module == normalized_module,
+        )
+        .with_for_update()
+        .one_or_none()
+    )
+
+    if require_4eyes:
+        try:
+            actor_uuid = UUID(str(ctx.actor_id))
+        except (TypeError, ValueError):
+            raise HTTPException(status_code=422, detail="actor_id must be a UUID")
+
+        if pending is None:
+            # Validate version exists before creating a pending approval.
+            existing_version_row = (
+                db.query(AuditLog.id)
+                .filter(
+                    AuditLog.organization_id == ctx.organization_id,
+                    AuditLog.entity_type == "ux_config",
+                    AuditLog.action == "ux_config_updated",
+                    AuditLog.entity_id == entity_id,
+                )
+                .order_by(AuditLog.seq.asc())
+                .offset(int(body.version) - 1)
+                .limit(1)
+                .first()
+            )
+            if existing_version_row is None:
+                raise HTTPException(status_code=404, detail="UX config version not found")
+
+            pending = PendingUXRollback(
+                organization_id=ctx.organization_id,
+                module=normalized_module,
+                requested_by=actor_uuid,
+                version=int(body.version),
+            )
+            db.add(pending)
+
+            append_audit_log(
+                db,
+                ctx,
+                entity_type="ux_config",
+                entity_id=entity_id,
+                action="ux_rollback_pending",
+                payload={
+                    "module": normalized_module,
+                    "version": int(body.version),
+                },
+            )
+
+            db.commit()
+            response.status_code = 202
+            return UXRollbackPendingResponse(approval_required=True)
+
+        # There is already a pending request.
+        if int(pending.version) != int(body.version):
+            raise HTTPException(
+                status_code=409,
+                detail="A pending UX rollback exists for this module with a different version",
+            )
+
+        if pending.requested_by == actor_uuid:
+            raise HTTPException(status_code=403, detail="Second approver must be a different user")
+
+        # Approve and execute the rollback, then remove the pending request.
+        db.delete(pending)
+        append_audit_log(
+            db,
+            ctx,
+            entity_type="ux_config",
+            entity_id=entity_id,
+            action="ux_rollback_approved",
+            payload={
+                "module": normalized_module,
+                "version": int(body.version),
+                "requested_by": str(pending.requested_by),
+                "approved_by": str(ctx.actor_id),
+            },
+        )
+
+        # Continue below to perform the actual rollback and write the canonical rollback audit.
 
     row = (
         db.query(AuditLog)

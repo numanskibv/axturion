@@ -16,6 +16,8 @@ from app.domain.automation.models import Activity, AutomationRule  # noqa: F401
 from app.domain.candidate.models import Candidate  # noqa: F401
 from app.domain.job.models import Job  # noqa: F401
 from app.domain.identity.models import OrganizationMembership, User  # noqa: F401
+from app.domain.governance.models import PolicyConfig  # noqa: F401
+from app.domain.ux.models import UXConfig, PendingUXRollback  # noqa: F401
 from app.domain.workflow.models import PendingStageTransition  # noqa: F401
 from app.domain.workflow.models import (  # noqa: F401
     Workflow,
