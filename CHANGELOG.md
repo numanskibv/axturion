@@ -28,6 +28,33 @@ MATS is built as a long-term modernization platform, not a feature-driven startu
 
 ---
 
+## [Unreleased]
+
+### Planned
+
+- Workflow editor mutation refinements
+- Governance configuration layer expansion
+- Enterprise-layer packaging strategy
+- Versioned workflow configuration groundwork
+
+## [0.6.0] - 2026-02-28
+
+### Added
+
+- Organization-scoped Candidate endpoints (CRUD-lite) with scope-based RBAC
+- Optional 4-eyes approval for stage transitions (`requires_approval` + pending transitions)
+- Approvals dashboard endpoints (`/approvals/*`) and approvals summary reporting (`/reporting/approvals/summary`)
+- Tamper-evident audit hash chaining (`seq`, `prev_hash`, `hash`) and verification endpoint (`/audit/verify`)
+- Compliance export bundle endpoint (`/compliance/export`) producing an org-scoped ZIP (audit + approvals + lifecycle)
+
+### Improved
+
+- Activity listing endpoints now support safe pagination (`limit`/`offset`, default 50, hard cap 500)
+- Compliance export memory usage reduced (single audit row materialization, compact JSON in ZIP, truncation safety cap)
+- Audit verification hardened: API-style calls cannot request full-chain verification via `limit=None`
+- Approvals summary optimized to use DB aggregation (avoids full materialization)
+- Documentation refreshed (README/docs), removed obsolete roadmap/contributing references
+
 ## Why is MATS still < 1.0?
 
 MATS is currently in the 0.x phase because we are deliberately stabilizing the architectural foundation before declaring production maturity.
@@ -165,27 +192,3 @@ This establishes the foundation for:
 - Workflow isolation tests added
 - Stage mutation integrity tests added
 - All tests passing in containerized environment
-
-## [Unreleased]
-
-### Added
-
-- Organization-scoped Candidate endpoints (CRUD-lite) with scope-based RBAC
-- Optional 4-eyes approval for stage transitions (`requires_approval` + pending transitions)
-- Approvals dashboard endpoints (`/approvals/*`) and approvals summary reporting (`/reporting/approvals/summary`)
-- Tamper-evident audit hash chaining (`seq`, `prev_hash`, `hash`) and verification endpoint (`/audit/verify`)
-- Compliance export bundle endpoint (`/compliance/export`) producing an org-scoped ZIP (audit + approvals + lifecycle)
-
-### Improved
-
-- Activity listing endpoints now support safe pagination (`limit`/`offset`, default 50, hard cap 500)
-- Compliance export memory usage reduced (single audit row materialization, compact JSON in ZIP, truncation safety cap)
-- Audit verification hardened: API-style calls cannot request full-chain verification via `limit=None`
-- Approvals summary optimized to use DB aggregation (avoids full materialization)
-
-### Planned
-
-- Workflow editor mutation refinements
-- Governance configuration layer expansion
-- Enterprise-layer packaging strategy
-- Versioned workflow configuration groundwork

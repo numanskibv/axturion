@@ -73,7 +73,7 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(
     title="MATS API",
-    version="0.5.0",
+    version="0.6.0",
     description="""
 MATS (Modular Application Tracking System) is a workflow-driven recruitment infrastructure platform.
 
