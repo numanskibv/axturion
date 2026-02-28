@@ -22,6 +22,8 @@ def get_retention_config(db: Session, ctx: RequestContext) -> RetentionConfig:
             else None
         ),
         "audit_retention_days": (
-            int(policy.audit_retention_days) if policy.audit_retention_days is not None else None
+            int(policy.audit_retention_days)
+            if policy.audit_retention_days is not None
+            else None
         ),
     }

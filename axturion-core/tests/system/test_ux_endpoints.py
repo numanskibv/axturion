@@ -3,7 +3,10 @@ from fastapi.testclient import TestClient
 from sqlalchemy.orm import sessionmaker
 
 from app.domain.audit.models import AuditLog  # noqa: F401 (register model)
-from app.domain.ux.models import UXConfig, PendingUXRollback  # noqa: F401 (register model)
+from app.domain.ux.models import (
+    UXConfig,
+    PendingUXRollback,
+)  # noqa: F401 (register model)
 
 
 @pytest.fixture
@@ -337,7 +340,9 @@ def test_rollback_invalid_version_returns_404(client: TestClient, db, org):
     assert rollback.status_code == 404
 
 
-def test_ux_rollback_requires_second_approver_when_policy_enabled(client: TestClient, db, org):
+def test_ux_rollback_requires_second_approver_when_policy_enabled(
+    client: TestClient, db, org
+):
     hr_admin1 = _make_user(db, org, "hr_admin", "admin-ux-4eyes-1@local")
     hr_admin2 = _make_user(db, org, "hr_admin", "admin-ux-4eyes-2@local")
 

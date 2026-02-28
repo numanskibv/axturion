@@ -2,7 +2,15 @@ import uuid
 from uuid import uuid4
 from datetime import datetime, timezone
 
-from sqlalchemy import Column, String, DateTime, ForeignKey, UniqueConstraint, JSON, Integer
+from sqlalchemy import (
+    Column,
+    String,
+    DateTime,
+    ForeignKey,
+    UniqueConstraint,
+    JSON,
+    Integer,
+)
 from sqlalchemy.dialects.postgresql import UUID, JSONB
 from sqlalchemy.sql import func
 
@@ -71,4 +79,6 @@ class PendingUXRollback(Base):
     requested_by = Column(UUID(as_uuid=True), nullable=False)
     version = Column(Integer, nullable=False)
 
-    created_at = Column(DateTime(timezone=True), nullable=False, server_default=func.now())
+    created_at = Column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )

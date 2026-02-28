@@ -89,7 +89,9 @@ def test_retention_preview_defaults_are_safe(client: TestClient, db, org):
     assert body["audit_entries_eligible_for_deletion"] == 0
 
 
-def test_retention_preview_counts_are_org_scoped(client: TestClient, db, org, monkeypatch):
+def test_retention_preview_counts_are_org_scoped(
+    client: TestClient, db, org, monkeypatch
+):
     from app.core.request_context import RequestContext
     from app.domain.organization.models import Organization
     from app.services.audit_service import append_audit_log

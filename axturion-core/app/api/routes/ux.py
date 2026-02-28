@@ -399,7 +399,9 @@ def rollback_ux_config(
                 .first()
             )
             if existing_version_row is None:
-                raise HTTPException(status_code=404, detail="UX config version not found")
+                raise HTTPException(
+                    status_code=404, detail="UX config version not found"
+                )
 
             pending = PendingUXRollback(
                 organization_id=ctx.organization_id,
@@ -433,7 +435,9 @@ def rollback_ux_config(
             )
 
         if pending.requested_by == actor_uuid:
-            raise HTTPException(status_code=403, detail="Second approver must be a different user")
+            raise HTTPException(
+                status_code=403, detail="Second approver must be a different user"
+            )
 
         # Approve and execute the rollback, then remove the pending request.
         db.delete(pending)

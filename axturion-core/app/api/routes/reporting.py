@@ -117,7 +117,9 @@ def reporting_stage_aging(
     ctx: RequestContext = Depends(get_request_context),
     db: Session = Depends(get_db),
 ):
-    return list_stage_aging(db, ctx, workflow_id=workflow_id, limit=limit, offset=offset)
+    return list_stage_aging(
+        db, ctx, workflow_id=workflow_id, limit=limit, offset=offset
+    )
 
 
 @router.get(

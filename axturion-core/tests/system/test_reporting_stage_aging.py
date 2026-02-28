@@ -68,7 +68,9 @@ def _make_user(db, org, role: str, email: str):
     return user
 
 
-def test_reporting_stage_aging_requires_reporting_read_scope(client: TestClient, db, org):
+def test_reporting_stage_aging_requires_reporting_read_scope(
+    client: TestClient, db, org
+):
     stage_operator = _make_user(db, org, "stage_operator", "no-reporting@local")
 
     resp = client.get(
@@ -81,7 +83,9 @@ def test_reporting_stage_aging_requires_reporting_read_scope(client: TestClient,
     assert resp.status_code == 403
 
 
-def test_reporting_stage_aging_org_scoped_and_exact_seconds(client: TestClient, db, org, monkeypatch):
+def test_reporting_stage_aging_org_scoped_and_exact_seconds(
+    client: TestClient, db, org, monkeypatch
+):
     from app.core.request_context import RequestContext
     from app.domain.application.models import Application
     from app.domain.organization.models import Organization
@@ -105,7 +109,9 @@ def test_reporting_stage_aging_org_scoped_and_exact_seconds(client: TestClient, 
     db.refresh(wf_other)
 
     now = datetime(2026, 2, 28, 12, 0, 0, tzinfo=timezone.utc)
-    monkeypatch.setattr("app.services.lifecycle_reporting_service._now_utc", lambda: now)
+    monkeypatch.setattr(
+        "app.services.lifecycle_reporting_service._now_utc", lambda: now
+    )
 
     # App with no stage change: age from created_at.
     a1_created = now - timedelta(seconds=100)
@@ -167,7 +173,9 @@ def test_reporting_stage_aging_org_scoped_and_exact_seconds(client: TestClient, 
     )
 
     # Stage change audit for app2 at now-10.
-    monkeypatch.setattr("app.services.audit_service._now_utc", lambda: now - timedelta(seconds=10))
+    monkeypatch.setattr(
+        "app.services.audit_service._now_utc", lambda: now - timedelta(seconds=10)
+    )
     append_audit_log(
         db,
         ctx,
@@ -185,7 +193,9 @@ def test_reporting_stage_aging_org_scoped_and_exact_seconds(client: TestClient, 
         role="recruiter",
         scopes=set(),
     )
-    monkeypatch.setattr("app.services.audit_service._now_utc", lambda: now - timedelta(seconds=5))
+    monkeypatch.setattr(
+        "app.services.audit_service._now_utc", lambda: now - timedelta(seconds=5)
+    )
     append_audit_log(
         db,
         ctx_other,

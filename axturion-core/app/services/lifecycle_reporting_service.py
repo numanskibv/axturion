@@ -39,7 +39,9 @@ def _coerce_dt(dt: datetime | None) -> datetime | None:
     return dt.astimezone(timezone.utc)
 
 
-def _parse_stage_change(action: str | None, payload_text: str | None) -> tuple[str, str] | None:
+def _parse_stage_change(
+    action: str | None, payload_text: str | None
+) -> tuple[str, str] | None:
     if not action:
         return None
     if not payload_text:
@@ -134,7 +136,8 @@ def list_stage_aging(
         .all()
     )
     latest_by_entity_id: dict[str, datetime] = {
-        str(entity_id): _coerce_dt(dt) or _now_utc() for (entity_id, dt) in latest_changes
+        str(entity_id): _coerce_dt(dt) or _now_utc()
+        for (entity_id, dt) in latest_changes
     }
 
     now = _now_utc()
@@ -212,7 +215,9 @@ def stage_duration_summary(
             AuditLog.action.in_(_STAGE_CHANGE_ACTIONS),
             AuditLog.entity_id.in_(app_ids),
         )
-        .order_by(AuditLog.entity_id.asc(), AuditLog.created_at.asc(), AuditLog.seq.asc())
+        .order_by(
+            AuditLog.entity_id.asc(), AuditLog.created_at.asc(), AuditLog.seq.asc()
+        )
         .all()
     )
 

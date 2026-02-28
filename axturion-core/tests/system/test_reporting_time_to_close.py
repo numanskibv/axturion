@@ -65,7 +65,9 @@ def _make_user(db, org, role: str, email: str):
     return user
 
 
-def test_reporting_time_to_close_requires_reporting_read_scope(client: TestClient, db, org):
+def test_reporting_time_to_close_requires_reporting_read_scope(
+    client: TestClient, db, org
+):
     stage_operator = _make_user(db, org, "stage_operator", "no-reporting-ttc@local")
     resp = client.get(
         "/reporting/time-to-close",

@@ -65,7 +65,9 @@ def _make_user(db, org, role: str, email: str):
     return user
 
 
-def test_reporting_stage_duration_summary_requires_reporting_read_scope(client: TestClient, db, org):
+def test_reporting_stage_duration_summary_requires_reporting_read_scope(
+    client: TestClient, db, org
+):
     stage_operator = _make_user(db, org, "stage_operator", "no-reporting-sds@local")
 
     resp = client.get(
@@ -78,7 +80,9 @@ def test_reporting_stage_duration_summary_requires_reporting_read_scope(client: 
     assert resp.status_code == 403
 
 
-def test_reporting_stage_duration_summary_workflow_not_found(client: TestClient, db, org):
+def test_reporting_stage_duration_summary_workflow_not_found(
+    client: TestClient, db, org
+):
     recruiter = _make_user(db, org, "recruiter", "reporting-sds-404@local")
 
     resp = client.get(
@@ -91,7 +95,9 @@ def test_reporting_stage_duration_summary_workflow_not_found(client: TestClient,
     assert resp.status_code == 404
 
 
-def test_reporting_stage_duration_summary_deterministic_stats(client: TestClient, db, org, monkeypatch):
+def test_reporting_stage_duration_summary_deterministic_stats(
+    client: TestClient, db, org, monkeypatch
+):
     from app.core.request_context import RequestContext
     from app.domain.application.models import Application
     from app.domain.workflow.models import Workflow
@@ -153,7 +159,9 @@ def test_reporting_stage_duration_summary_deterministic_stats(client: TestClient
     )
 
     # app1: applied->screening at t=10
-    monkeypatch.setattr("app.services.audit_service._now_utc", lambda: base + timedelta(seconds=10))
+    monkeypatch.setattr(
+        "app.services.audit_service._now_utc", lambda: base + timedelta(seconds=10)
+    )
     append_audit_log(
         db,
         ctx,
@@ -164,7 +172,9 @@ def test_reporting_stage_duration_summary_deterministic_stats(client: TestClient
     )
 
     # app1: screening->interview at t=40
-    monkeypatch.setattr("app.services.audit_service._now_utc", lambda: base + timedelta(seconds=40))
+    monkeypatch.setattr(
+        "app.services.audit_service._now_utc", lambda: base + timedelta(seconds=40)
+    )
     append_audit_log(
         db,
         ctx,
@@ -175,7 +185,9 @@ def test_reporting_stage_duration_summary_deterministic_stats(client: TestClient
     )
 
     # app2: applied->screening at t=20
-    monkeypatch.setattr("app.services.audit_service._now_utc", lambda: base + timedelta(seconds=20))
+    monkeypatch.setattr(
+        "app.services.audit_service._now_utc", lambda: base + timedelta(seconds=20)
+    )
     append_audit_log(
         db,
         ctx,
@@ -186,7 +198,9 @@ def test_reporting_stage_duration_summary_deterministic_stats(client: TestClient
     )
 
     # open_app stage change should not affect closed-only summary.
-    monkeypatch.setattr("app.services.audit_service._now_utc", lambda: base + timedelta(seconds=30))
+    monkeypatch.setattr(
+        "app.services.audit_service._now_utc", lambda: base + timedelta(seconds=30)
+    )
     append_audit_log(
         db,
         ctx,
