@@ -1,4 +1,5 @@
 import type { StageAgingItem } from "@/lib/lifecycleApi";
+import { formatDuration } from "@/lib/timeFormat";
 
 const SEVEN_DAYS_SECONDS = 7 * 24 * 60 * 60;
 
@@ -45,7 +46,7 @@ export default function StageAgingTable({
                                             {row.application_id}
                                         </td>
                                         <td className="py-2 pr-3">{row.current_stage}</td>
-                                        <td className="py-2 pr-3 tabular-nums">{row.age_seconds}</td>
+                                        <td className="py-2 pr-3 tabular-nums">{formatDuration(row.age_seconds)}</td>
                                     </tr>
                                 );
                             })

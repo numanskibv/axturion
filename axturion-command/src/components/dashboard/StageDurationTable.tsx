@@ -1,9 +1,5 @@
 import type { StageDurationSummaryItem } from "@/lib/lifecycleApi";
-
-function formatNumber(value: number): string {
-    if (!Number.isFinite(value)) return "-";
-    return Number.isInteger(value) ? String(value) : value.toFixed(1);
-}
+import { formatDuration } from "@/lib/timeFormat";
 
 export default function StageDurationTable({
     items,
@@ -39,13 +35,13 @@ export default function StageDurationTable({
                                 <tr key={row.stage} className="border-b border-[var(--ax-border)]">
                                     <td className="py-2 pr-3">{row.stage}</td>
                                     <td className="py-2 pr-3 tabular-nums">
-                                        {formatNumber(row.avg_duration_seconds)}
+                                        {formatDuration(row.avg_duration_seconds)}
                                     </td>
                                     <td className="py-2 pr-3 tabular-nums">
-                                        {formatNumber(row.median_duration_seconds)}
+                                        {formatDuration(row.median_duration_seconds)}
                                     </td>
                                     <td className="py-2 pr-3 tabular-nums">
-                                        {formatNumber(row.p90_duration_seconds)}
+                                        {formatDuration(row.p90_duration_seconds)}
                                     </td>
                                 </tr>
                             ))

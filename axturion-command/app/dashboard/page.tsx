@@ -4,6 +4,7 @@ import { Suspense, useMemo } from "react";
 import { useSearchParams } from "next/navigation";
 
 import CommandLayout from "@/components/layout/CommandLayout";
+import DashboardError from "@/components/dashboard/DashboardError";
 import StageAgingTable from "@/components/dashboard/StageAgingTable";
 import StageDurationTable from "@/components/dashboard/StageDurationTable";
 import TimeToCloseCard from "@/components/dashboard/TimeToCloseCard";
@@ -50,10 +51,7 @@ function DashboardInner() {
                     {timeToClose.loading && !timeToClose.data ? (
                         <SkeletonBlock heightClass="h-28" />
                     ) : timeToClose.error ? (
-                        <div className="rounded-[var(--ax-radius)] border border-[var(--ax-border)] bg-[var(--ax-surface)] p-4">
-                            <div className="text-sm font-semibold">Time to Close</div>
-                            <div className="mt-2 text-sm text-red-400">{timeToClose.error.message}</div>
-                        </div>
+                        <DashboardError title="Time to Close" message={timeToClose.error.message} />
                     ) : timeToClose.data ? (
                         <TimeToCloseCard stats={timeToClose.data} />
                     ) : null}
@@ -63,10 +61,7 @@ function DashboardInner() {
                     {stageAging.loading && !stageAging.data ? (
                         <SkeletonBlock heightClass="h-64" />
                     ) : stageAging.error ? (
-                        <div className="rounded-[var(--ax-radius)] border border-[var(--ax-border)] bg-[var(--ax-surface)] p-4">
-                            <div className="text-sm font-semibold">Stage Aging</div>
-                            <div className="mt-2 text-sm text-red-400">{stageAging.error.message}</div>
-                        </div>
+                        <DashboardError title="Stage Aging" message={stageAging.error.message} />
                     ) : stageAging.data ? (
                         <StageAgingTable items={stageAging.data} />
                     ) : null}
@@ -74,19 +69,17 @@ function DashboardInner() {
 
                 <div>
                     {!workflowId ? (
-                        <div className="rounded-[var(--ax-radius)] border border-[var(--ax-border)] bg-[var(--ax-surface)] p-4">
-                            <div className="text-sm font-semibold">Stage Duration Summary</div>
-                            <div className="mt-2 text-sm text-red-400">
-                                Missing workflow_id (pass ?workflow_id=... or ensure stage aging returns data)
-                            </div>
-                        </div>
+                        <DashboardError
+                            title="Stage Duration Summary"
+                            message="Select a workflow to view stage duration analytics."
+                        />
                     ) : stageDuration.loading && !stageDuration.data ? (
                         <SkeletonBlock heightClass="h-64" />
                     ) : stageDuration.error ? (
-                        <div className="rounded-[var(--ax-radius)] border border-[var(--ax-border)] bg-[var(--ax-surface)] p-4">
-                            <div className="text-sm font-semibold">Stage Duration Summary</div>
-                            <div className="mt-2 text-sm text-red-400">{stageDuration.error.message}</div>
-                        </div>
+                        <DashboardError
+                            title="Stage Duration Summary"
+                            message={stageDuration.error.message}
+                        />
                     ) : stageDuration.data ? (
                         <StageDurationTable items={stageDuration.data} />
                     ) : null}

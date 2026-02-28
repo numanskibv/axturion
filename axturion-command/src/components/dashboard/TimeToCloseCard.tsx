@@ -1,10 +1,5 @@
 import type { TimeToCloseStatsResponse } from "@/lib/lifecycleApi";
-
-function formatNumber(value: number): string {
-    if (!Number.isFinite(value)) return "-";
-    // Keep UI stable: show integers as-is, floats to 1 decimal.
-    return Number.isInteger(value) ? String(value) : value.toFixed(1);
-}
+import { formatDuration } from "@/lib/timeFormat";
 
 export default function TimeToCloseCard({
     stats,
@@ -21,19 +16,19 @@ export default function TimeToCloseCard({
             <div className="grid grid-cols-2 gap-3 text-sm">
                 <div>
                     <div className="text-xs text-[var(--ax-muted)]">count</div>
-                    <div className="tabular-nums">{formatNumber(stats.count)}</div>
+                    <div className="tabular-nums">{stats.count}</div>
                 </div>
                 <div>
                     <div className="text-xs text-[var(--ax-muted)]">avg_seconds</div>
-                    <div className="tabular-nums">{formatNumber(stats.avg_seconds)}</div>
+                    <div className="tabular-nums">{formatDuration(stats.avg_seconds)}</div>
                 </div>
                 <div>
                     <div className="text-xs text-[var(--ax-muted)]">median_seconds</div>
-                    <div className="tabular-nums">{formatNumber(stats.median_seconds)}</div>
+                    <div className="tabular-nums">{formatDuration(stats.median_seconds)}</div>
                 </div>
                 <div>
                     <div className="text-xs text-[var(--ax-muted)]">p90_seconds</div>
-                    <div className="tabular-nums">{formatNumber(stats.p90_seconds)}</div>
+                    <div className="tabular-nums">{formatDuration(stats.p90_seconds)}</div>
                 </div>
             </div>
         </div>
