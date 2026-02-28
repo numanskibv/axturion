@@ -16,23 +16,17 @@ export default function CommandStrip({
 }) {
     const t = useTranslations("dashboard");
 
-    const safeOpenCount = Number.isFinite(openCount) ? Math.max(0, Math.floor(openCount)) : 0;
-    const safeBreachCount = Number.isFinite(breachCount) ? Math.max(0, Math.floor(breachCount)) : 0;
-    const safeBreachPercent = Number.isFinite(breachPercent) ? Math.max(0, breachPercent) : 0;
-    const safeAvgTimeToClose =
-        typeof avgTimeToClose === "number" && Number.isFinite(avgTimeToClose) ? avgTimeToClose : undefined;
-
     return (
         <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-            <KpiTile label={t("commandStrip.openCount")} value={String(safeOpenCount)} />
-            <KpiTile label={t("commandStrip.breachCount")} value={String(safeBreachCount)} />
+            <KpiTile label={t("commandStrip.openCount")} value={String(openCount)} />
+            <KpiTile label={t("commandStrip.breachCount")} value={String(breachCount)} />
             <KpiTile
                 label={t("commandStrip.breachPercent")}
-                value={`${safeBreachPercent.toFixed(1)}%`}
+                value={`${breachPercent}%`}
             />
             <KpiTile
                 label={t("commandStrip.avgTimeToClose")}
-                value={safeAvgTimeToClose === undefined ? "—" : formatDuration(safeAvgTimeToClose)}
+                value={avgTimeToClose === undefined ? "—" : formatDuration(avgTimeToClose)}
             />
         </div>
     );
