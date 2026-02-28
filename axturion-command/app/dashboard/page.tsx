@@ -101,6 +101,18 @@ function DashboardMetrics({ workflowId }: { workflowId: string }) {
         return { total, breachCount, breachPercent };
     }, [stageAging.data, slaSeconds]);
 
+    let riskLevel: "controlled" | "watch" | "at_risk" | "critical";
+
+    if (breachMetrics.breachPercent === 0) {
+        riskLevel = "controlled";
+    } else if (breachMetrics.breachPercent <= 5) {
+        riskLevel = "watch";
+    } else if (breachMetrics.breachPercent <= 15) {
+        riskLevel = "at_risk";
+    } else {
+        riskLevel = "critical";
+    }
+
     const stageDuration = useStageDurationSummary(workflowId);
 
     return (
@@ -111,6 +123,7 @@ function DashboardMetrics({ workflowId }: { workflowId: string }) {
                     breachCount={breachMetrics.breachCount}
                     breachPercent={breachMetrics.breachPercent}
                     avgTimeToClose={timeToClose.data?.avg_seconds}
+                    riskLevel={riskLevel}
                 />
             </div>
 

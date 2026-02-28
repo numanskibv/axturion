@@ -16,7 +16,13 @@
             "openCount": "Open",
             "breachCount": "SLA breaches",
             "breachPercent": "Breach %",
-            "avgTimeToClose": "Avg time to close"
+            "avgTimeToClose": "Avg time to close",
+            "risk": {
+                "controlled": "Controlled",
+                "watch": "Watch",
+                "at_risk": "At Risk",
+                "critical": "Critical"
+            }
         },
         "sections": {
             "pipelineHealth": "Pipeline Health",

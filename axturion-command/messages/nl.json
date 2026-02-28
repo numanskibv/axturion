@@ -16,7 +16,13 @@
             "openCount": "Open",
             "breachCount": "SLA overschrijdingen",
             "breachPercent": "Overschrijdingen %",
-            "avgTimeToClose": "Gem. tijd tot sluiten"
+            "avgTimeToClose": "Gem. tijd tot sluiten",
+            "risk": {
+                "controlled": "Beheerst",
+                "watch": "Bewaken",
+                "at_risk": "Risico",
+                "critical": "Kritiek"
+            }
         },
         "sections": {
             "pipelineHealth": "Pijplijngezondheid",

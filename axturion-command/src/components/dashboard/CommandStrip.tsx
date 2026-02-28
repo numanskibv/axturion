@@ -3,18 +3,31 @@
 import { formatDuration } from "@/lib/timeFormat";
 import { useTranslations } from "next-intl";
 
+type RiskLevel = "controlled" | "watch" | "at_risk" | "critical";
+
 export default function CommandStrip({
     openCount,
     breachCount,
     breachPercent,
     avgTimeToClose,
+    riskLevel,
 }: {
     openCount: number;
     breachCount: number;
     breachPercent: number;
     avgTimeToClose?: number;
+    riskLevel: RiskLevel;
 }) {
     const t = useTranslations("dashboard");
+
+    const riskLabelByLevel: Record<RiskLevel, string> = {
+        controlled: t("commandStrip.risk.controlled"),
+        watch: t("commandStrip.risk.watch"),
+        at_risk: t("commandStrip.risk.at_risk"),
+        critical: t("commandStrip.risk.critical"),
+    };
+
+    const riskLabel = riskLabelByLevel[riskLevel];
 
     return (
         <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
@@ -23,6 +36,7 @@ export default function CommandStrip({
             <KpiTile
                 label={t("commandStrip.breachPercent")}
                 value={`${breachPercent}%`}
+                subLabel={riskLabel}
             />
             <KpiTile
                 label={t("commandStrip.avgTimeToClose")}
@@ -32,11 +46,22 @@ export default function CommandStrip({
     );
 }
 
-function KpiTile({ label, value }: { label: string; value: string }) {
+function KpiTile({
+    label,
+    value,
+    subLabel,
+}: {
+    label: string;
+    value: string;
+    subLabel?: string;
+}) {
     return (
         <div className="rounded-[length:var(--ax-radius)] border border-[color:var(--ax-border)] bg-[color:var(--ax-surface)] p-4">
             <div className="text-xs text-[color:var(--ax-muted)]">{label}</div>
             <div className="mt-1 tabular-nums text-sm font-semibold">{value}</div>
+            {subLabel ? (
+                <div className="mt-1 text-xs text-[color:var(--ax-muted)]">{subLabel}</div>
+            ) : null}
         </div>
     );
 }
