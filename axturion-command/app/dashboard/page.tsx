@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 
 import CommandLayout from "@/components/layout/CommandLayout";
 import DashboardError from "@/components/dashboard/DashboardError";
@@ -76,7 +76,7 @@ function DashboardInner() {
                         <div className="text-sm text-[color:var(--ax-muted)]">{t("emptyState.selectWorkflow")}</div>
                     </div>
                 ) : (
-                    <DashboardMetrics workflowId={selectedWorkflowId} />
+                    <DashboardMetrics key={selectedWorkflowId} workflowId={selectedWorkflowId} />
                 )}
             </div>
         </CommandLayout>
@@ -85,6 +85,9 @@ function DashboardInner() {
 
 function DashboardMetrics({ workflowId }: { workflowId: string }) {
     const t = useTranslations("dashboard");
+
+    const previousBreachPercent = useRef<number | null>(null);
+    const [trend, setTrend] = useState<"improving" | "stable" | "worsening">("stable");
 
     const stageAging = useStageAging({ workflowId });
     const timeToClose = useTimeToClose({ workflowId });
@@ -100,6 +103,33 @@ function DashboardMetrics({ workflowId }: { workflowId: string }) {
         const breachPercent = total === 0 ? 0 : (breachCount / total) * 100;
         return { total, breachCount, breachPercent };
     }, [stageAging.data, slaSeconds]);
+
+    useEffect(() => {
+        const previous = previousBreachPercent.current;
+
+        let nextTrend: "improving" | "stable" | "worsening";
+
+        if (previous === null) {
+            nextTrend = "stable";
+        } else {
+            const diff = breachMetrics.breachPercent - previous;
+            if (Math.abs(diff) < 1) {
+                nextTrend = "stable";
+            } else if (diff < 0) {
+                nextTrend = "improving";
+            } else {
+                nextTrend = "worsening";
+            }
+        }
+
+        previousBreachPercent.current = breachMetrics.breachPercent;
+
+        const timer = window.setTimeout(() => {
+            setTrend((current) => (current === nextTrend ? current : nextTrend));
+        }, 0);
+
+        return () => window.clearTimeout(timer);
+    }, [breachMetrics.breachPercent]);
 
     let riskLevel: "controlled" | "watch" | "at_risk" | "critical";
 
@@ -124,6 +154,7 @@ function DashboardMetrics({ workflowId }: { workflowId: string }) {
                     breachPercent={breachMetrics.breachPercent}
                     avgTimeToClose={timeToClose.data?.avg_seconds}
                     riskLevel={riskLevel}
+                    trend={trend}
                 />
             </div>
 
