@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 
-from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer
+from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, String
 from sqlalchemy.dialects.postgresql import UUID
 
 from app.core.db import Base
@@ -27,6 +27,9 @@ class PolicyConfig(Base):
 
     # SLA for stage aging highlighting in the Command dashboard.
     stage_aging_sla_days = Column(Integer, default=7, nullable=False)
+
+    # Default UI language (organization-level). Users may override.
+    default_language = Column(String, default="en", nullable=False)
 
     candidate_retention_days = Column(Integer, nullable=True)
     audit_retention_days = Column(Integer, nullable=True)

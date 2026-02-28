@@ -86,6 +86,7 @@ def test_get_policy_autocreates_defaults(client: TestClient, db, org):
     assert body["require_4eyes_on_hire"] is False
     assert body["require_4eyes_on_ux_rollback"] is False
     assert body["stage_aging_sla_days"] == 7
+    assert body["default_language"] == "en"
     assert body.get("candidate_retention_days") is None
     assert body.get("audit_retention_days") is None
     assert "created_at" in body
@@ -147,6 +148,7 @@ def test_put_policy_strict_write_and_audited(client: TestClient, db, org):
             "require_4eyes_on_hire": True,
             "require_4eyes_on_ux_rollback": True,
             "stage_aging_sla_days": 14,
+            "default_language": "nl",
             "candidate_retention_days": 365,
         },
     )
@@ -156,6 +158,7 @@ def test_put_policy_strict_write_and_audited(client: TestClient, db, org):
     assert body["require_4eyes_on_hire"] is True
     assert body["require_4eyes_on_ux_rollback"] is True
     assert body["stage_aging_sla_days"] == 14
+    assert body["default_language"] == "nl"
     assert body["candidate_retention_days"] == 365
     assert body.get("audit_retention_days") is None
 
@@ -177,5 +180,21 @@ def test_put_policy_strict_write_and_audited(client: TestClient, db, org):
     assert payload["require_4eyes_on_hire"] is True
     assert payload["require_4eyes_on_ux_rollback"] is True
     assert payload["stage_aging_sla_days"] == 14
+    assert payload["default_language"] == "nl"
     assert payload["candidate_retention_days"] == 365
     assert payload["audit_retention_days"] is None
+
+
+def test_put_policy_rejects_invalid_language(client: TestClient, db, org):
+    hr_admin = _make_user(db, org, "hr_admin", "hr-admin-policy-lang@local")
+
+    resp = client.put(
+        "/governance/policy",
+        headers={
+            "X-Org-Id": str(org.id),
+            "X-User-Id": str(hr_admin.id),
+        },
+        json={"default_language": "de"},
+    )
+
+    assert resp.status_code == 422

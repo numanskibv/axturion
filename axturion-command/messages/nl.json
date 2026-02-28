@@ -1,0 +1,59 @@
+{
+    "common": {
+        "noData": "Geen data"
+    },
+    "dashboard": {
+        "title": "Levenscyclusdashboard",
+        "subtitle": "Operationele statistieken per workflow",
+        "timeToClose": {
+            "title": "Tijd tot sluiten",
+            "subtitle": "Gesloten sollicitaties (organisatie)",
+            "fields": {
+                "count": "Aantal",
+                "avg": "Gemiddeld",
+                "median": "Mediaan",
+                "p90": "P90"
+            }
+        },
+        "slaBreaches": {
+            "title": "SLA Overschrijdingen",
+            "subtitle": "Overschrijdingen fase-leeftijd (SLA {days}d)",
+            "badge": {
+                "ok": "OK",
+                "attention": "Let op"
+            },
+            "fields": {
+                "breachCount": "Overschrijdingen",
+                "total": "Totaal",
+                "breachPercent": "Overschrijdingen %",
+                "slaDays": "SLA (dagen)"
+            }
+        },
+        "stageAging": {
+            "title": "Fase-leeftijd",
+            "openCount": "{count} open",
+            "columns": {
+                "applicationId": "Sollicitatie",
+                "currentStage": "Fase",
+                "age": "Leeftijd"
+            }
+        },
+        "stageDuration": {
+            "title": "Fase-duur (samenvatting)",
+            "selectWorkflow": "Selecteer een workflow om fase-duur analyses te bekijken.",
+            "stagesCount": "{count} fases",
+            "columns": {
+                "stage": "Fase",
+                "avg": "Gemiddeld",
+                "median": "Mediaan",
+                "p90": "P90"
+            }
+        }
+    },
+    "workflow": {
+        "select": "Selecteer workflow"
+    },
+    "sla": {
+        "breach": "SLA Overschrijdingen"
+    }
+}

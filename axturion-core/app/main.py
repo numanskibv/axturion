@@ -3,6 +3,7 @@ import subprocess
 from datetime import datetime, timezone
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, Depends, APIRouter
+from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 
 import app.core.db as core_db
@@ -19,7 +20,9 @@ from app.api.routes import (
     approvals,
     candidates,
     compliance,
+    dev_seed,
     governance,
+    identity,
     jobs,
     ux,
     workflows,
@@ -94,6 +97,20 @@ Designed for on-premise, modular, and extensible deployments.
 )
 
 
+env_name = os.getenv("ENV", "dev").lower()
+if env_name != "prod":
+    # Dev/test convenience: allow Command (localhost:3000) to call Core (localhost:8000)
+    # with custom auth headers (X-Org-Id, X-User-Id, ...). In production we expect
+    # an API gateway / same-origin hosting strategy.
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=["http://localhost:3000", "http://127.0.0.1:3000"],
+        allow_credentials=False,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
+
+
 @app.middleware("http")
 async def correlation_middleware(request, call_next):
     correlation_id = str(uuid4())
@@ -139,9 +156,13 @@ app.include_router(applications.router, prefix="/applications")
 app.include_router(activity.router, prefix="/activity")
 app.include_router(candidates.router, prefix="/candidates")
 app.include_router(jobs.router, prefix="/jobs")
+app.include_router(identity.router)
 app.include_router(workflows.router, prefix="/workflows")
 app.include_router(workflow_queries.router, prefix="/workflow-queries")
 app.include_router(workflow_editor.router, prefix="/workflow-editor")
+
+if env_name != "prod":
+    app.include_router(dev_seed.router)
 
 
 router = APIRouter()

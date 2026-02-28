@@ -1,0 +1,59 @@
+{
+    "common": {
+        "noData": "No data"
+    },
+    "dashboard": {
+        "title": "Lifecycle Dashboard",
+        "subtitle": "Operational metrics per workflow",
+        "timeToClose": {
+            "title": "Time to Close",
+            "subtitle": "Closed applications (org-scoped)",
+            "fields": {
+                "count": "Count",
+                "avg": "Average",
+                "median": "Median",
+                "p90": "P90"
+            }
+        },
+        "slaBreaches": {
+            "title": "SLA Breaches",
+            "subtitle": "Stage aging breaches (SLA {days}d)",
+            "badge": {
+                "ok": "OK",
+                "attention": "Attention"
+            },
+            "fields": {
+                "breachCount": "Breaches",
+                "total": "Total",
+                "breachPercent": "Breach %",
+                "slaDays": "SLA (days)"
+            }
+        },
+        "stageAging": {
+            "title": "Stage Aging",
+            "openCount": "{count} open",
+            "columns": {
+                "applicationId": "Application",
+                "currentStage": "Stage",
+                "age": "Age"
+            }
+        },
+        "stageDuration": {
+            "title": "Stage Duration Summary",
+            "selectWorkflow": "Select a workflow to view stage duration analytics.",
+            "stagesCount": "{count} stages",
+            "columns": {
+                "stage": "Stage",
+                "avg": "Average",
+                "median": "Median",
+                "p90": "P90"
+            }
+        }
+    },
+    "workflow": {
+        "select": "Select workflow"
+    },
+    "sla": {
+        "breach": "SLA Breaches"
+    }
+}

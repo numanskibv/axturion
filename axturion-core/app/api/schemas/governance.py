@@ -4,12 +4,15 @@ from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from app.core.language import DEFAULT_LANGUAGE, Language
+
 
 class PolicyConfigSchema(BaseModel):
     organization_id: str
     require_4eyes_on_hire: bool = False
     require_4eyes_on_ux_rollback: bool = False
     stage_aging_sla_days: int = Field(default=7, ge=1)
+    default_language: Language = DEFAULT_LANGUAGE
     candidate_retention_days: int | None = Field(default=None, ge=1)
     audit_retention_days: int | None = Field(default=None, ge=1)
     created_at: datetime
@@ -22,6 +25,7 @@ class PolicyConfigWriteSchema(BaseModel):
     require_4eyes_on_hire: bool = False
     require_4eyes_on_ux_rollback: bool = False
     stage_aging_sla_days: int = Field(default=7, ge=1)
+    default_language: Language = DEFAULT_LANGUAGE
     candidate_retention_days: int | None = Field(default=None, ge=1)
     audit_retention_days: int | None = Field(default=None, ge=1)
 

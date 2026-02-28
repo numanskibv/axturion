@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session
 from uuid import UUID
 from app.core.request_context import RequestContext
 from app.domain.application.models import Application
-from app.domain.workflow.models import WorkflowTransition
+from app.domain.workflow.models import Workflow, WorkflowTransition
 
 
 class OrganizationAccessError(Exception):
@@ -59,3 +59,26 @@ def get_allowed_transitions(
         "from_stage": current_stage,
         "allowed_to_stages": allowed_to_stages,
     }
+
+
+def list_workflows(
+    db: Session,
+    ctx: RequestContext,
+):
+    """Return a lightweight list of workflows for the current organization."""
+
+    rows = (
+        db.query(Workflow.id, Workflow.name, Workflow.active)
+        .filter(Workflow.organization_id == ctx.organization_id)
+        .order_by(Workflow.name.asc(), Workflow.id.asc())
+        .all()
+    )
+
+    return [
+        {
+            "id": workflow_id,
+            "name": name,
+            "active": bool(active),
+        }
+        for (workflow_id, name, active) in rows
+    ]

@@ -14,6 +14,7 @@ class Workflow(Base):
         nullable=False,
     )
     name = Column(String, nullable=False)
+    active = Column(Boolean, nullable=False, default=True)
 
 
 class WorkflowStage(Base):

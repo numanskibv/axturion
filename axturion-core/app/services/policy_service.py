@@ -32,6 +32,7 @@ def _snapshot(policy: PolicyConfig) -> dict[str, Any]:
         "require_4eyes_on_hire": bool(policy.require_4eyes_on_hire),
         "require_4eyes_on_ux_rollback": bool(policy.require_4eyes_on_ux_rollback),
         "stage_aging_sla_days": int(policy.stage_aging_sla_days),
+        "default_language": str(policy.default_language),
         "candidate_retention_days": (
             int(policy.candidate_retention_days)
             if policy.candidate_retention_days is not None
@@ -62,6 +63,8 @@ def update_policy(
         policy.require_4eyes_on_ux_rollback = payload["require_4eyes_on_ux_rollback"]
     if "stage_aging_sla_days" in payload:
         policy.stage_aging_sla_days = payload["stage_aging_sla_days"]
+    if "default_language" in payload:
+        policy.default_language = payload["default_language"]
     if "candidate_retention_days" in payload:
         policy.candidate_retention_days = payload["candidate_retention_days"]
     if "audit_retention_days" in payload:

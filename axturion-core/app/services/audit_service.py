@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import os
 from datetime import datetime, timezone
 from typing import Any
 
@@ -32,6 +33,7 @@ def append_audit_log(
     entity_id: str,
     action: str,
     payload: Any = None,
+    created_at: datetime | None = None,
 ) -> AuditLog:
     """Append an audit log entry with tamper-evident hash chaining.
 
@@ -56,6 +58,15 @@ def append_audit_log(
     next_seq = 1 if last is None else int(last.seq) + 1
     prev_hash = None if last is None else str(last.hash)
 
+    if created_at is not None and os.getenv("ENV", "dev").lower() == "prod":
+        raise ValueError("created_at override is not allowed in prod")
+
+    effective_created_at = _now_utc() if created_at is None else created_at
+    if effective_created_at.tzinfo is None:
+        effective_created_at = effective_created_at.replace(tzinfo=timezone.utc)
+    else:
+        effective_created_at = effective_created_at.astimezone(timezone.utc)
+
     log = AuditLog(
         organization_id=ctx.organization_id,
         actor_id=str(ctx.actor_id) if ctx.actor_id else None,
@@ -63,7 +74,7 @@ def append_audit_log(
         entity_id=str(entity_id),
         action=action,
         payload=_payload_to_text(payload),
-        created_at=_now_utc(),
+        created_at=effective_created_at,
         seq=next_seq,
         prev_hash=prev_hash,
         hash="",  # computed below
@@ -73,6 +84,9 @@ def append_audit_log(
     log.hash = compute_hash(prev_hash, canonical)
 
     db.add(log)
+    # Ensure subsequent audit appends in the same transaction see this row,
+    # so sequence numbers remain unique.
+    db.flush()
     return log
 
 

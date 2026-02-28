@@ -13,11 +13,13 @@ import SLABreachCard from "@/components/dashboard/SLABreachCard";
 import { useStageAging, useStageDurationSummary, useTimeToClose } from "@/hooks/useLifecycle";
 import { usePolicyConfig } from "@/hooks/usePolicyConfig";
 
+import { useTranslations } from "next-intl";
+
 function SkeletonBlock({ heightClass }: { heightClass: string }) {
     return (
         <div
             className={
-                "animate-pulse rounded-[var(--ax-radius)] border border-[var(--ax-border)] bg-[var(--ax-surface)] " +
+                "animate-pulse rounded-[length:var(--ax-radius)] border border-[color:var(--ax-border)] bg-[color:var(--ax-surface)] " +
                 heightClass
             }
         />
@@ -25,6 +27,8 @@ function SkeletonBlock({ heightClass }: { heightClass: string }) {
 }
 
 function DashboardInner() {
+    const t = useTranslations("dashboard");
+
     const searchParams = useSearchParams();
     const queryWorkflowId = searchParams.get("workflow_id")?.trim() ?? "";
 
@@ -55,9 +59,9 @@ function DashboardInner() {
         <CommandLayout module="dashboard">
             <div className="mx-auto max-w-6xl space-y-6 p-6">
                 <div>
-                    <h1 className="text-lg font-semibold">Lifecycle Dashboard</h1>
-                    <div className="text-sm text-[var(--ax-muted)]">
-                        Uses reporting endpoints (org-scoped) with localStorage identity.
+                    <h1 className="text-lg font-semibold">{t("title")}</h1>
+                    <div className="text-sm text-[color:var(--ax-muted)]">
+                        {t("subtitle")}
                     </div>
                 </div>
 
@@ -65,7 +69,10 @@ function DashboardInner() {
                     {timeToClose.loading && !timeToClose.data ? (
                         <SkeletonBlock heightClass="h-28" />
                     ) : timeToClose.error ? (
-                        <DashboardError title="Time to Close" message={timeToClose.error.message} />
+                        <DashboardError
+                            title={t("timeToClose.title")}
+                            message={timeToClose.error.message}
+                        />
                     ) : timeToClose.data ? (
                         <TimeToCloseCard stats={timeToClose.data} />
                     ) : null}
@@ -75,7 +82,10 @@ function DashboardInner() {
                     {stageAging.loading && !stageAging.data ? (
                         <SkeletonBlock heightClass="h-28" />
                     ) : stageAging.error ? (
-                        <DashboardError title="SLA Breaches" message={stageAging.error.message} />
+                        <DashboardError
+                            title={t("slaBreaches.title")}
+                            message={stageAging.error.message}
+                        />
                     ) : (
                         <SLABreachCard
                             total={breachMetrics.total}
@@ -90,7 +100,10 @@ function DashboardInner() {
                     {stageAging.loading && !stageAging.data ? (
                         <SkeletonBlock heightClass="h-64" />
                     ) : stageAging.error ? (
-                        <DashboardError title="Stage Aging" message={stageAging.error.message} />
+                        <DashboardError
+                            title={t("stageAging.title")}
+                            message={stageAging.error.message}
+                        />
                     ) : stageAging.data ? (
                         <StageAgingTable
                             items={stageAging.data}
@@ -102,14 +115,14 @@ function DashboardInner() {
                 <div>
                     {!workflowId ? (
                         <DashboardError
-                            title="Stage Duration Summary"
-                            message="Select a workflow to view stage duration analytics."
+                            title={t("stageDuration.title")}
+                            message={t("stageDuration.selectWorkflow")}
                         />
                     ) : stageDuration.loading && !stageDuration.data ? (
                         <SkeletonBlock heightClass="h-64" />
                     ) : stageDuration.error ? (
                         <DashboardError
-                            title="Stage Duration Summary"
+                            title={t("stageDuration.title")}
                             message={stageDuration.error.message}
                         />
                     ) : stageDuration.data ? (
@@ -126,9 +139,9 @@ export default function DashboardPage() {
         <Suspense
             fallback={
                 <div className="mx-auto max-w-6xl space-y-6 p-6">
-                    <div className="animate-pulse rounded-[var(--ax-radius)] border border-[var(--ax-border)] bg-[var(--ax-surface)] p-4">
-                        <div className="h-4 w-48 rounded bg-[var(--ax-border)]" />
-                        <div className="mt-2 h-3 w-80 rounded bg-[var(--ax-border)]" />
+                    <div className="animate-pulse rounded-[length:var(--ax-radius)] border border-[color:var(--ax-border)] bg-[color:var(--ax-surface)] p-4">
+                        <div className="h-4 w-48 rounded bg-[color:var(--ax-border)]" />
+                        <div className="mt-2 h-3 w-80 rounded bg-[color:var(--ax-border)]" />
                     </div>
                     <SkeletonBlock heightClass="h-28" />
                     <SkeletonBlock heightClass="h-64" />

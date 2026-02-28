@@ -1,3 +1,7 @@
+"use client";
+
+import { useTranslations } from "next-intl";
+
 function getIndicatorClasses(args: {
     breachCount: number;
     breachPercent: number;
@@ -27,6 +31,8 @@ export default function SLABreachCard({
     breachPercent: number;
     slaDays: number;
 }) {
+    const t = useTranslations("dashboard");
+
     const safeTotal = Number.isFinite(total) ? Math.max(0, Math.floor(total)) : 0;
     const safeBreachCount = Number.isFinite(breachCount)
         ? Math.max(0, Math.floor(breachCount))
@@ -40,12 +46,12 @@ export default function SLABreachCard({
     });
 
     return (
-        <div className="rounded-[var(--ax-radius)] border border-[var(--ax-border)] bg-[var(--ax-surface)] p-4">
+        <div className="rounded-[length:var(--ax-radius)] border border-[color:var(--ax-border)] bg-[color:var(--ax-surface)] p-4">
             <div className="mb-3 flex items-start justify-between gap-3">
                 <div>
-                    <h2 className="text-sm font-semibold">SLA Breaches</h2>
-                    <div className="text-xs text-[var(--ax-muted)]">
-                        Stage aging breaches (SLA {safeSlaDays}d)
+                    <h2 className="text-sm font-semibold">{t("slaBreaches.title")}</h2>
+                    <div className="text-xs text-[color:var(--ax-muted)]">
+                        {t("slaBreaches.subtitle", { days: safeSlaDays })}
                     </div>
                 </div>
 
@@ -57,28 +63,30 @@ export default function SLABreachCard({
                         indicator.badgeText
                     }
                 >
-                    {safeBreachCount === 0 ? "OK" : "Attention"}
+                    {safeBreachCount === 0
+                        ? t("slaBreaches.badge.ok")
+                        : t("slaBreaches.badge.attention")}
                 </div>
             </div>
 
             <div className="grid grid-cols-2 gap-3 text-sm">
                 <div>
-                    <div className="text-xs text-[var(--ax-muted)]">breachCount</div>
-                    <div className="tabular-nums text-[var(--ax-text)]">{safeBreachCount}</div>
+                    <div className="text-xs text-[color:var(--ax-muted)]">{t("slaBreaches.fields.breachCount")}</div>
+                    <div className="tabular-nums text-[color:var(--ax-text)]">{safeBreachCount}</div>
                 </div>
                 <div>
-                    <div className="text-xs text-[var(--ax-muted)]">total</div>
-                    <div className="tabular-nums text-[var(--ax-text)]">{safeTotal}</div>
+                    <div className="text-xs text-[color:var(--ax-muted)]">{t("slaBreaches.fields.total")}</div>
+                    <div className="tabular-nums text-[color:var(--ax-text)]">{safeTotal}</div>
                 </div>
                 <div>
-                    <div className="text-xs text-[var(--ax-muted)]">breachPercent</div>
-                    <div className="tabular-nums text-[var(--ax-text)]">
+                    <div className="text-xs text-[color:var(--ax-muted)]">{t("slaBreaches.fields.breachPercent")}</div>
+                    <div className="tabular-nums text-[color:var(--ax-text)]">
                         {safeTotal === 0 ? "0%" : `${safeBreachPercent.toFixed(1)}%`}
                     </div>
                 </div>
                 <div>
-                    <div className="text-xs text-[var(--ax-muted)]">slaDays</div>
-                    <div className="tabular-nums text-[var(--ax-text)]">{safeSlaDays}d</div>
+                    <div className="text-xs text-[color:var(--ax-muted)]">{t("slaBreaches.fields.slaDays")}</div>
+                    <div className="tabular-nums text-[color:var(--ax-text)]">{safeSlaDays}d</div>
                 </div>
             </div>
         </div>
