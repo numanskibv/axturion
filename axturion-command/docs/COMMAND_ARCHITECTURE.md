@@ -35,9 +35,9 @@ graph TD
 
     subgraph Core["AXTURION Core API"]
         API[REST Endpoints]
-        UXEndpoint[/ux/{module}]
-        GovernancePolicy[/governance/policy]
-        Reporting[/reporting/*]
+        UXEndpoint["/ux/{module}"]
+        GovernancePolicy["/governance/policy"]
+        Reporting["/reporting/*"]
     end
 
     Browser --> Pages
