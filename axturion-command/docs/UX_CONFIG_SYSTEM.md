@@ -30,9 +30,9 @@ graph TD
     end
 
     subgraph Core["AXTURION Core"]
-        UXEndpoint[/ux/{module}]
-        VersionsEndpoint[/ux/{module}/versions]
-        RollbackEndpoint[/ux/{module}/rollback]
+        UXEndpoint["/ux/{module}"]
+        VersionsEndpoint["/ux/{module}/versions"]
+        RollbackEndpoint["/ux/{module}/rollback"]
         PendingModel[PendingUXRollback]
         PolicyConfig[PolicyConfig]
         AuditLog[AuditLog]
