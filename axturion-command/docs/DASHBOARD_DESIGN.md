@@ -25,10 +25,10 @@ graph TD
     TTCHook[useTimeToClose]
     DurationHook[useStageDurationSummary]
 
-    PolicyAPI[/governance/policy]
-    AgingAPI[/reporting/stage-aging]
-    TTCAPI[/reporting/time-to-close]
-    DurationAPI[/reporting/stage-duration-summary]
+    PolicyAPI["/governance/policy"]
+    AgingAPI["/reporting/stage-aging"]
+    TTCAPI["/reporting/time-to-close"]
+    DurationAPI["/reporting/stage-duration-summary"]
 
     Page --> SLA
     Page --> TTC
